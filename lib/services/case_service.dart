@@ -602,9 +602,9 @@ class CaseService {
           );
         }
       }
-    } on ApiException catch (e) {
+    } on ApiException {
       rethrow;
-    } catch (e, stackTrace) {
+    } catch (e) {
       throw ApiException(
         message: 'An error occurred while uploading images: $e',
       );

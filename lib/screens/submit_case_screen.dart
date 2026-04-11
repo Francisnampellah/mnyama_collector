@@ -30,8 +30,8 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
   CaseSeverity? _severity;
 
   // Image fields
-  List<File> _selectedImages = [];
-  bool _isUploadingImages = false;
+  final List<File> _selectedImages = [];
+  final bool _isUploadingImages = false;
 
   @override
   void initState() {

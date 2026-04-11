@@ -402,7 +402,7 @@ class _CaseCard extends StatelessWidget {
 
               // Symptoms Preview
               Text(
-                'Symptoms: ${caseItem.symptoms.length > 60 ? caseItem.symptoms.substring(0, 60) + '...' : caseItem.symptoms}',
+                'Symptoms: ${caseItem.symptoms.length > 60 ? '${caseItem.symptoms.substring(0, 60)}...' : caseItem.symptoms}',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),

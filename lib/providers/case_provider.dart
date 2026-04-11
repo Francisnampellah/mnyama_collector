@@ -130,7 +130,7 @@ class CaseProvider extends ChangeNotifier {
       for (int i = 0; i < images.length; i++) {
         final fileSize = await images[i].length();
         print(
-          '[CaseProvider]   Image ${i + 1}/${images.length}: ${images[i].path} (${fileSize} bytes)',
+          '[CaseProvider]   Image ${i + 1}/${images.length}: ${images[i].path} ($fileSize bytes)',
         );
       }
 
