@@ -9,6 +9,12 @@ class AppConfig {
   // For Real Device use: 'http://YOUR_BACKEND_IP:4000/api'
   // For Production use: 'https://your-production-api.com/api'
 
+  // Supabase Configuration
+  static const String supabaseUrl = 'https://yegnkojcbmvavoltjgot.supabase.co';
+  static const String supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllZ25rb2pjYm12YXZvbHRqZ290Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3ODA1MjksImV4cCI6MjA5MTM1NjUyOX0.eMBgrw9wJKM8CoQmAjARfIp5Mh1RDSvWKkx0VUUEq9w';
+  static const String storageImageBucket = 'image';
+
   // API Endpoints
   static const String registerEndpoint = '/auth/register';
   static const String loginEndpoint = '/auth/login';

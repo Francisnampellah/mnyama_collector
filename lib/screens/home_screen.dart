@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'submit_case_screen.dart';
+import 'view_cases_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -116,9 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.list,
                         title: 'View Cases',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Cases list feature coming soon'),
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ViewCasesScreen(),
                             ),
                           );
                         },

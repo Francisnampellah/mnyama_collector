@@ -152,6 +152,48 @@ class CaseProvider extends ChangeNotifier {
     }
   }
 
+  // Create case with images in one operation
+  Future<void> createCaseWithImages(
+    CreateCaseRequest caseRequest,
+    List<File> images,
+  ) async {
+    print('[CaseProvider] ========== BEGIN CREATE CASE WITH IMAGES ==========');
+    _isSubmitting = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Step 1: Create the case
+      print('[CaseProvider] Step 1: Creating case...');
+      final newCase = await submitCase(caseRequest);
+      print(
+        '[CaseProvider] Step 1 complete: Case created with ID: ${newCase.id}',
+      );
+
+      // Step 2: Upload images if any
+      if (images.isNotEmpty) {
+        print('[CaseProvider] Step 2: Uploading ${images.length} images...');
+        await uploadCaseImages(newCase.id, images);
+        print('[CaseProvider] Step 2 complete: Images uploaded successfully');
+      } else {
+        print('[CaseProvider] Step 2 skipped: No images to upload');
+      }
+
+      _currentCase = newCase;
+      _error = null;
+      print('[CaseProvider] ✓ Case with images created successfully');
+    } catch (e, stackTrace) {
+      print('[CaseProvider] ✗ Failed to create case with images: $e');
+      print('[CaseProvider] Stack trace: $stackTrace');
+      _error = 'Failed to create case: $e';
+      rethrow;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+      print('[CaseProvider] ========== END CREATE CASE WITH IMAGES ==========');
+    }
+  }
+
   // Clear error
   void clearError() {
     _error = null;

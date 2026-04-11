@@ -3,6 +3,7 @@ import '../models/auth_models.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/token_service.dart';
+import '../services/user_service.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _user;
@@ -26,12 +27,40 @@ class AuthProvider with ChangeNotifier {
   // Check if user is already authenticated on app startup
   Future<void> _checkAuthStatus() async {
     try {
-      _isAuthenticated = await AuthService.isAuthenticated();
-      _token = await TokenService.getToken();
+      print('[AuthProvider] Checking authentication status...');
+
+      // Check if token exists and is valid
+      final token = await TokenService.getToken();
+      final isTokenValid = await TokenService.isTokenValid();
+
+      if (token != null && isTokenValid) {
+        print('[AuthProvider] Valid token found, restoring user session...');
+
+        // Try to restore user data from storage
+        final user = await UserService.getUser();
+
+        if (user != null) {
+          _user = user;
+          _token = token;
+          _isAuthenticated = true;
+          print('[AuthProvider] User session restored: ${user.email}');
+        } else {
+          print('[AuthProvider] Token valid but no user data found');
+          _isAuthenticated = false;
+          _token = null;
+        }
+      } else {
+        print('[AuthProvider] No valid token found');
+        _isAuthenticated = false;
+        _token = null;
+      }
+
       notifyListeners();
     } catch (e) {
+      print('[AuthProvider] Error checking auth status: $e');
       _isAuthenticated = false;
       _token = null;
+      _user = null;
     }
   }
 
@@ -83,6 +112,11 @@ class AuthProvider with ChangeNotifier {
       _isAuthenticated = true;
       _isLoading = false;
       _error = null;
+
+      // Save user data for persistence
+      await UserService.saveUser(response.user);
+      print('[AuthProvider] User registered and saved: ${response.user.email}');
+
       notifyListeners();
 
       return true;
@@ -129,6 +163,11 @@ class AuthProvider with ChangeNotifier {
       _isAuthenticated = true;
       _isLoading = false;
       _error = null;
+
+      // Save user data for persistence
+      await UserService.saveUser(response.user);
+      print('[AuthProvider] User logged in and saved: ${response.user.email}');
+
       notifyListeners();
 
       return true;
@@ -153,11 +192,17 @@ class AuthProvider with ChangeNotifier {
 
       await AuthService.logout();
 
+      // Clear both token and user data
+      await UserService.clearUser();
+      await TokenService.clearToken();
+
       _user = null;
       _token = null;
       _isAuthenticated = false;
       _error = null;
       _isLoading = false;
+
+      print('[AuthProvider] User logged out and data cleared');
       notifyListeners();
     } catch (e) {
       _error = 'Error during logout: $e';

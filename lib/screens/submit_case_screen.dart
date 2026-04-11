@@ -36,7 +36,6 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch disease labels when screen loads
     Future.microtask(() {
       context.read<CaseProvider>().fetchDiseaseLabels();
     });
@@ -45,7 +44,6 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
   Future<void> _captureImageFromCamera() async {
     try {
       print('[SubmitCaseScreen] Starting camera capture...');
-      print('[SubmitCaseScreen] ImagePicker instance: $_imagePicker');
 
       final XFile? photo = await _imagePicker.pickImage(
         source: ImageSource.camera,
@@ -57,9 +55,6 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
       );
 
       if (photo != null) {
-        print('[SubmitCaseScreen] Photo path: ${photo.path}');
-        print('[SubmitCaseScreen] Photo name: ${photo.name}');
-
         final file = File(photo.path);
         final exists = await file.exists();
         print('[SubmitCaseScreen] Photo file exists: $exists');
@@ -72,9 +67,6 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
         setState(() {
           _selectedImages.add(File(photo.path));
         });
-        print(
-          '[SubmitCaseScreen] Image added to list. Total images: ${_selectedImages.length}',
-        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -84,8 +76,6 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
             ),
           );
         }
-      } else {
-        print('[SubmitCaseScreen] Camera capture cancelled by user');
       }
     } catch (e, stackTrace) {
       print('[SubmitCaseScreen] ERROR capturing image: $e');
@@ -105,37 +95,21 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
 
   Future<void> _pickImageFromGallery() async {
     try {
-      print('[SubmitCaseScreen] Starting gallery image selection...');
-      print('[SubmitCaseScreen] ImagePicker instance: $_imagePicker');
+      print('[SubmitCaseScreen] Starting gallery picker...');
 
-      final XFile? photo = await _imagePicker.pickImage(
+      final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
       );
 
-      print(
-        '[SubmitCaseScreen] Gallery selection returned: ${photo != null ? "image selected" : "cancelled by user"}',
-      );
-
-      if (photo != null) {
-        print('[SubmitCaseScreen] Image path: ${photo.path}');
-        print('[SubmitCaseScreen] Image name: ${photo.name}');
-
-        final file = File(photo.path);
+      if (image != null) {
+        final file = File(image.path);
         final exists = await file.exists();
-        print('[SubmitCaseScreen] Image file exists: $exists');
-
-        if (exists) {
-          final fileSize = await file.length();
-          print('[SubmitCaseScreen] Image file size: $fileSize bytes');
-        }
+        print('[SubmitCaseScreen] Gallery image exists: $exists');
 
         setState(() {
-          _selectedImages.add(File(photo.path));
+          _selectedImages.add(File(image.path));
         });
-        print(
-          '[SubmitCaseScreen] Image added to list. Total images: ${_selectedImages.length}',
-        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -145,174 +119,14 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
             ),
           );
         }
-      } else {
-        print('[SubmitCaseScreen] Gallery selection cancelled by user');
       }
-    } catch (e, stackTrace) {
-      print('[SubmitCaseScreen] ERROR selecting image: $e');
-      print('[SubmitCaseScreen] Stack trace: $stackTrace');
+    } catch (e) {
+      print('[SubmitCaseScreen] ERROR picking image: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error picking image: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    }
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-    });
-  }
-
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      try {
-        print(
-          '[SubmitCaseScreen] ========== CASE SUBMISSION STARTED ==========',
-        );
-        print('[SubmitCaseScreen] Form validation: PASSED');
-
-        final request = CreateCaseRequest(
-          diseaseLabelId: _selectedDisease!.id,
-          animalType: _animalType!,
-          breed: _breed,
-          ageMonths: _ageMonths,
-          gender: _gender!,
-          symptoms: _symptoms!,
-          diagnosis: _diagnosis,
-          notes: _notes,
-          farmLocation: _farmLocation,
-          severity: _severity!,
-        );
-
-        print('[SubmitCaseScreen] Case request created:');
-        print('[SubmitCaseScreen]   - Disease ID: ${request.diseaseLabelId}');
-        print('[SubmitCaseScreen]   - Animal Type: ${request.animalType}');
-        print('[SubmitCaseScreen]   - Breed: ${request.breed}');
-        print('[SubmitCaseScreen]   - Age: ${request.ageMonths} months');
-        print('[SubmitCaseScreen]   - Gender: ${request.gender}');
-        print('[SubmitCaseScreen]   - Severity: ${request.severity}');
-        print('[SubmitCaseScreen] Submitting case to provider...');
-
-        final caseProvider = context.read<CaseProvider>();
-        final createdCase = await caseProvider.submitCase(request);
-
-        print('[SubmitCaseScreen] ✓ Case submitted successfully!');
-        print('[SubmitCaseScreen] Case ID: ${createdCase.id}');
-        print('[SubmitCaseScreen] Case Status: ${createdCase.status}');
-
-        if (!mounted) return;
-
-        // Upload images if any selected
-        if (_selectedImages.isNotEmpty) {
-          print('[SubmitCaseScreen] ');
-          print(
-            '[SubmitCaseScreen] ========== STARTING IMAGE UPLOAD ==========',
-          );
-          print(
-            '[SubmitCaseScreen] Total images to upload: ${_selectedImages.length}',
-          );
-
-          // Log detailed info about each image
-          for (int i = 0; i < _selectedImages.length; i++) {
-            final imageFile = _selectedImages[i];
-            final exists = await imageFile.exists();
-            final size = await imageFile.length();
-            print('[SubmitCaseScreen] Image ${i + 1}:');
-            print('[SubmitCaseScreen]   - Path: ${imageFile.path}');
-            print('[SubmitCaseScreen]   - Type: ${imageFile.runtimeType}');
-            print('[SubmitCaseScreen]   - Exists: $exists');
-            print('[SubmitCaseScreen]   - Size: $size bytes');
-          }
-
-          setState(() => _isUploadingImages = true);
-
-          try {
-            print('[SubmitCaseScreen] ');
-            print('[SubmitCaseScreen] Passing images to provider...');
-            print('[SubmitCaseScreen] - Case ID: ${createdCase.id}');
-            print(
-              '[SubmitCaseScreen] - Images count: ${_selectedImages.length}',
-            );
-            print(
-              '[SubmitCaseScreen] - Images type: ${_selectedImages.runtimeType}',
-            );
-
-            await caseProvider.uploadCaseImages(
-              createdCase.id,
-              _selectedImages,
-            );
-
-            if (!mounted) return;
-            setState(() => _isUploadingImages = false);
-
-            print('[SubmitCaseScreen] ✓ All images uploaded successfully!');
-            print(
-              '[SubmitCaseScreen] ========== CASE SUBMISSION COMPLETE ==========',
-            );
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Case created with ${_selectedImages.length} image(s)!',
-                ),
-                backgroundColor: Colors.green,
-              ),
-            );
-          } catch (e, stackTrace) {
-            if (!mounted) return;
-            setState(() => _isUploadingImages = false);
-
-            print('[SubmitCaseScreen] ✗ Image upload FAILED: $e');
-            print('[SubmitCaseScreen] Stack trace: $stackTrace');
-
-            // Show warning: case created but images failed to upload
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Case created but image upload failed: $e'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
-        } else {
-          // Case created without images
-          print('[SubmitCaseScreen] No images to upload');
-          print(
-            '[SubmitCaseScreen] ========== CASE SUBMISSION COMPLETE ==========',
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Case submitted successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        if (!mounted) return;
-        // Navigate back
-        Navigator.of(context).pop(true);
-      } catch (e, stackTrace) {
-        if (!mounted) return;
-        setState(() => _isUploadingImages = false);
-
-        print('[SubmitCaseScreen] ✗ CASE SUBMISSION FAILED: $e');
-        print('[SubmitCaseScreen] Stack trace: $stackTrace');
-        print(
-          '[SubmitCaseScreen] ========== CASE SUBMISSION FAILED ==========',
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -323,578 +137,561 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Submit Disease Case'), elevation: 0),
+      appBar: AppBar(
+        title: const Text('Submit New Case'),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: Consumer<CaseProvider>(
         builder: (context, caseProvider, _) {
-          if (caseProvider.isLoadingDiseases) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading diseases...'),
-                ],
-              ),
-            );
-          }
-
-          // Show error state with retry
-          if (caseProvider.error != null &&
-              caseProvider.diseaseLabels.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load diseases',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(color: Colors.red),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      caseProvider.error!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        caseProvider.clearError();
-                        caseProvider.fetchDiseaseLabels();
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Warning if diseases not loaded
-                  if (caseProvider.diseaseLabels.isEmpty &&
-                      !caseProvider.isLoadingDiseases)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning, color: Colors.orange),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'No diseases available. Please contact administrator.',
-                              style: TextStyle(
-                                color: Colors.orange,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (caseProvider.diseaseLabels.isEmpty &&
-                      !caseProvider.isLoadingDiseases)
-                    const SizedBox(height: 24),
-
-                  // Section: Disease Selection
-                  _SectionHeader(title: 'Disease Information'),
-                  const SizedBox(height: 16),
-
-                  // Disease Label Dropdown with Search
-                  DropdownSearch<DiseaseLabel>(
-                    items: caseProvider.diseaseLabels,
-                    selectedItem: _selectedDisease,
-                    onChanged: (value) {
-                      setState(() => _selectedDisease = value);
-                    },
-                    popupProps: PopupProps.menu(
-                      showSearchBox: true,
-                      searchFieldProps: TextFieldProps(
-                        decoration: InputDecoration(
-                          hintText: 'Search diseases...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          prefixIcon: const Icon(Icons.search),
-                          contentPadding: const EdgeInsets.all(12),
-                        ),
-                      ),
-                      itemBuilder: (context, disease, isSelected) {
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            disease.toString(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      },
-                      menuProps: MenuProps(
-                        borderRadius: BorderRadius.circular(8),
-                        elevation: 8,
-                      ),
-                    ),
-                    dropdownButtonProps: DropdownButtonProps(
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    dropdownDecoratorProps: DropDownDecoratorProps(
-                      dropdownSearchDecoration: InputDecoration(
-                        labelText: 'Select Disease *',
-                        hintText: 'Choose or search disease',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        prefixIcon: const Icon(Icons.local_hospital),
-                        contentPadding: const EdgeInsets.fromLTRB(
-                          12,
-                          16,
-                          8,
-                          12,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select a disease';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Section: Animal Information
-                  _SectionHeader(title: 'Animal Information'),
-                  const SizedBox(height: 16),
-
-                  // Animal Type
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Animal Type *',
-                      hintText: 'e.g., Cow, Sheep, Goat',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.pets),
-                    ),
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) {
-                        return 'Please enter animal type';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => _animalType = value,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Breed (Optional)
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Breed',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.info_outline),
-                    ),
-                    onSaved: (value) => _breed = value,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Age in Months (Optional)
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Age (months)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.calendar_today),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        if (int.tryParse(value) == null) {
-                          return 'Please enter a valid number';
-                        }
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => _ageMonths = value?.isNotEmpty ?? false
-                        ? int.parse(value!)
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Gender
-                  DropdownButtonFormField<Gender>(
-                    value: _gender,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: 'Gender *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.wc),
-                    ),
-                    items: Gender.values.map((gender) {
-                      return DropdownMenuItem(
-                        value: gender,
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: Text(
-                            gender.name,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() => _gender = value);
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select gender';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Section: Clinical Information
-                  _SectionHeader(title: 'Clinical Information'),
-                  const SizedBox(height: 16),
-
-                  // Symptoms
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Symptoms *',
-                      hintText: 'Describe the clinical symptoms',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.description),
-                    ),
-                    maxLines: 4,
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) {
-                        return 'Please describe symptoms';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => _symptoms = value,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Diagnosis (Optional)
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Diagnosis',
-                      hintText: 'Final diagnosis if known',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.medical_services),
-                    ),
-                    maxLines: 3,
-                    onSaved: (value) => _diagnosis = value,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Severity
-                  DropdownButtonFormField<CaseSeverity>(
-                    value: _severity,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: 'Severity *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.warning),
-                    ),
-                    items: CaseSeverity.values.map((severity) {
-                      return DropdownMenuItem(
-                        value: severity,
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: Text(
-                            severity.name,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() => _severity = value);
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select severity';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Section: Additional Information
-                  _SectionHeader(title: 'Additional Information'),
-                  const SizedBox(height: 16),
-
-                  // Notes (Optional)
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Notes',
-                      hintText: 'Any additional notes',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.note),
-                    ),
-                    maxLines: 3,
-                    onSaved: (value) => _notes = value,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Farm Location (Optional)
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Farm Location',
-                      hintText: 'Location of the farm',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.location_on),
-                    ),
-                    onSaved: (value) => _farmLocation = value,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Section: Case Images
-                  _SectionHeader(title: 'Case Images'),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Capture or select images of the animal and disease signs',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Image Capture Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _captureImageFromCamera,
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Camera'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _pickImageFromGallery,
-                          icon: const Icon(Icons.photo_library),
-                          label: const Text('Gallery'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Images Preview Grid
-                  if (_selectedImages.isNotEmpty)
-                    Column(
+          return CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: true,
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Selected Images (${_selectedImages.length})',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                        // Case Images Section
+                        _buildSectionHeader(
+                          context,
+                          icon: Icons.image,
+                          title: 'Case Images',
+                          number: '1',
                         ),
-                        const SizedBox(height: 8),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
+                        const SizedBox(height: 16),
+                        _buildImageUploadSection(context),
+                        const SizedBox(height: 32),
+
+                        // Disease Section
+                        _buildSectionHeader(
+                          context,
+                          icon: Icons.health_and_safety,
+                          title: 'Disease Information',
+                          number: '2',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDiseaseField(context, caseProvider),
+                        const SizedBox(height: 32),
+
+                        // Animal Information Section
+                        _buildSectionHeader(
+                          context,
+                          icon: Icons.pets,
+                          title: 'Animal Information',
+                          number: '3',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildAnimalTypeField(context),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                label: 'Breed',
+                                hint: 'Optional',
+                                keyboardType: TextInputType.text,
+                                onChanged: (value) => _breed = value,
                               ),
-                          itemCount: _selectedImages.length,
-                          itemBuilder: (context, index) {
-                            return Stack(
-                              alignment: Alignment.topRight,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey[300]!,
-                                      width: 1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    image: DecorationImage(
-                                      image: FileImage(_selectedImages[index]),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () => _removeImage(index),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    padding: const EdgeInsets.all(4),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildTextField(
+                                label: 'Age (months)',
+                                hint: 'Number',
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  _ageMonths = int.tryParse(value);
+                                },
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: _buildGenderDropdown(context)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildSeverityDropdown(context)),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Clinical Information Section
+                        _buildSectionHeader(
+                          context,
+                          icon: Icons.medical_information,
+                          title: 'Clinical Information',
+                          number: '4',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          label: 'Symptoms',
+                          hint: 'Describe the symptoms...',
+                          maxLines: 3,
+                          onChanged: (value) => _symptoms = value,
+                          isRequired: true,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          label: 'Diagnosis',
+                          hint: 'Any known diagnosis? (Optional)',
+                          maxLines: 3,
+                          onChanged: (value) => _diagnosis = value,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Additional Information Section
+                        _buildSectionHeader(
+                          context,
+                          icon: Icons.info,
+                          title: 'Additional Information',
+                          number: '5',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          label: 'Farm Location',
+                          hint: 'Optional',
+                          keyboardType: TextInputType.text,
+                          onChanged: (value) => _farmLocation = value,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          label: 'Additional Notes',
+                          hint: 'Any other relevant information?',
+                          maxLines: 3,
+                          onChanged: (value) => _notes = value,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Submit Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: caseProvider.isSubmitting
+                                ? null
+                                : () => _submitForm(context, caseProvider),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: caseProvider.isSubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    'Submit Case',
+                                    style: Theme.of(context).textTheme.bodyLarge
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                       ],
-                    )
-                  else
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey[300]!,
-                          width: 2,
-                          style: BorderStyle.solid,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey[50],
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.image_not_supported,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No images selected',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tap Camera or Gallery to add images',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 32),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed:
-                          (caseProvider.isSubmitting || _isUploadingImages)
-                          ? null
-                          : _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: (caseProvider.isSubmitting || _isUploadingImages)
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _isUploadingImages
-                                      ? 'Uploading Images...'
-                                      : 'Submitting...',
-                                ),
-                              ],
-                            )
-                          : const Text('Submit Case'),
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Cancel Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
     );
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(
-        context,
-      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+  Widget _buildSectionHeader(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String number,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Icon(icon, color: Theme.of(context).primaryColor, size: 24),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+      ],
     );
+  }
+
+  Widget _buildImageUploadSection(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildImageButton(
+                context,
+                icon: Icons.camera_alt,
+                label: 'Take Photo',
+                onTap: _captureImageFromCamera,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildImageButton(
+                context,
+                icon: Icons.image,
+                label: 'Choose from Gallery',
+                onTap: _pickImageFromGallery,
+              ),
+            ),
+          ],
+        ),
+        if (_selectedImages.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            '${_selectedImages.length} image${_selectedImages.length > 1 ? 's' : ''} selected',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _selectedImages.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Image.file(
+                          _selectedImages[index],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedImages.removeAt(index);
+                            });
+                          },
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildImageButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).primaryColor.withOpacity(0.05),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: Theme.of(context).primaryColor, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiseaseField(BuildContext context, CaseProvider caseProvider) {
+    return DropdownSearch<DiseaseLabel>(
+      popupProps: PopupProps.menu(
+        showSearchBox: true,
+        fit: FlexFit.loose,
+        itemBuilder: (context, disease, _) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  disease.name,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  disease.code,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      items: caseProvider.diseaseLabels,
+      selectedItem: _selectedDisease,
+      onChanged: (disease) => setState(() => _selectedDisease = disease),
+      compareFn: (a, b) => a.id == b.id,
+      dropdownDecoratorProps: DropDownDecoratorProps(
+        dropdownSearchDecoration: InputDecoration(
+          labelText: 'Disease',
+          hintText: 'Search and select...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: const Icon(Icons.health_and_safety),
+        ),
+      ),
+      validator: (disease) {
+        if (disease == null) {
+          return 'Please select a disease';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildAnimalTypeField(BuildContext context) {
+    return DropdownSearch<String>(
+      items: const ['Cattle', 'Poultry', 'Pig', 'Sheep', 'Goat', 'Other'],
+      selectedItem: _animalType,
+      onChanged: (value) => setState(() => _animalType = value),
+      dropdownDecoratorProps: DropDownDecoratorProps(
+        dropdownSearchDecoration: InputDecoration(
+          labelText: 'Animal Type',
+          hintText: 'Select animal type...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: const Icon(Icons.pets),
+        ),
+      ),
+      validator: (value) {
+        if (value == null) {
+          return 'Please select animal type';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildGenderDropdown(BuildContext context) {
+    return DropdownSearch<Gender>(
+      items: Gender.values,
+      selectedItem: _gender,
+      onChanged: (value) => setState(() => _gender = value),
+      dropdownDecoratorProps: DropDownDecoratorProps(
+        dropdownSearchDecoration: InputDecoration(
+          labelText: 'Gender',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: const Icon(Icons.wc),
+        ),
+      ),
+      itemAsString: (item) => item.name.toUpperCase(),
+      validator: (value) {
+        if (value == null) {
+          return 'Please select gender';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildSeverityDropdown(BuildContext context) {
+    return DropdownSearch<CaseSeverity>(
+      items: CaseSeverity.values,
+      selectedItem: _severity,
+      onChanged: (value) => setState(() => _severity = value),
+      dropdownDecoratorProps: DropDownDecoratorProps(
+        dropdownSearchDecoration: InputDecoration(
+          labelText: 'Severity',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: const Icon(Icons.warning),
+        ),
+      ),
+      itemAsString: (item) => item.name.toUpperCase(),
+      validator: (value) {
+        if (value == null) {
+          return 'Please select severity';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    required Function(String) onChanged,
+    bool isRequired = false,
+  }) {
+    return TextFormField(
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      minLines: maxLines == 1 ? 1 : maxLines,
+      onChanged: onChanged,
+      validator: isRequired
+          ? (value) {
+              if (value?.isEmpty ?? true) {
+                return 'This field is required';
+              }
+              return null;
+            }
+          : null,
+    );
+  }
+
+  Future<void> _submitForm(
+    BuildContext context,
+    CaseProvider caseProvider,
+  ) async {
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all required fields')),
+      );
+      return;
+    }
+
+    if (_selectedDisease == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a disease')));
+      return;
+    }
+
+    if (_animalType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an animal type')),
+      );
+      return;
+    }
+
+    try {
+      print('[SubmitCaseScreen] Submitting case...');
+
+      // Create the case request object
+      final caseRequest = CreateCaseRequest(
+        diseaseLabelId: _selectedDisease!.id,
+        animalType: _animalType!,
+        breed: _breed,
+        ageMonths: _ageMonths,
+        gender: _gender ?? Gender.UNKNOWN,
+        symptoms: _symptoms ?? '',
+        diagnosis: _diagnosis,
+        notes: _notes,
+        farmLocation: _farmLocation,
+        severity: _severity ?? CaseSeverity.MODERATE,
+      );
+
+      await caseProvider.createCaseWithImages(caseRequest, _selectedImages);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Case submitted successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        Future.delayed(const Duration(seconds: 1), () {
+          Navigator.of(context).pop();
+        });
+      }
+    } catch (e) {
+      print('[SubmitCaseScreen] Error submitting case: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }
