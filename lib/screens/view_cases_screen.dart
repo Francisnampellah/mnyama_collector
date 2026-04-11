@@ -4,6 +4,27 @@ import '../models/case_models.dart';
 import '../providers/case_provider.dart';
 import 'view_case_detail_screen.dart';
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const _forestGreen = Color(0xFF1A3D2B);
+const _forestGreenLight = Color(0xFF2D6647);
+const _forestGreenMuted = Color(0xFF7AAB8A);
+const _forestGreenSurface = Color(0xFFEAF3EC);
+const _warmBg = Color(0xFFF7F5F0);
+const _cardBg = Color(0xFFFFFFFF);
+const _borderColor = Color(0xFFE0DDD8);
+const _textPrimary = Color(0xFF1C1C1E);
+const _textMuted = Color(0xFFA09D98);
+const _labelColor = Color(0xFF8A8880);
+
+// Status color tokens
+const _blueAccent = Color(0xFF185FA5);
+const _blueSurface = Color(0xFFEEF4FB);
+const _amberAccent = Color(0xFFBA7517);
+const _amberSurface = Color(0xFFFBF4E8);
+const _redAccent = Color(0xFFA32D2D);
+const _redSurface = Color(0xFFFCEBEB);
+// ─────────────────────────────────────────────────────────────────────────────
+
 class ViewCasesScreen extends StatefulWidget {
   const ViewCasesScreen({super.key});
 
@@ -11,17 +32,31 @@ class ViewCasesScreen extends StatefulWidget {
   State<ViewCasesScreen> createState() => _ViewCasesScreenState();
 }
 
-class _ViewCasesScreenState extends State<ViewCasesScreen> {
+class _ViewCasesScreenState extends State<ViewCasesScreen>
+    with TickerProviderStateMixin {
   int _currentPage = 1;
   final int _itemsPerPage = 10;
   String _searchQuery = '';
   CaseStatus? _selectedStatus;
   final _searchController = TextEditingController();
+  late AnimationController _fadeController;
 
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeController.forward();
     _loadCases();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _fadeController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCases() async {
@@ -31,431 +66,718 @@ class _ViewCasesScreenState extends State<ViewCasesScreen> {
     );
   }
 
-  void _filterCases() {
-    setState(() {});
-  }
-
   List<Case> _getFilteredCases(List<Case> cases) {
-    return cases.where((caseItem) {
+    return cases.where((c) {
       final matchesSearch =
           _searchQuery.isEmpty ||
-          caseItem.animalType.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          caseItem.symptoms.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          caseItem.id.toLowerCase().contains(_searchQuery.toLowerCase());
-
+          c.animalType.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          c.symptoms.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          c.id.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesStatus =
-          _selectedStatus == null || caseItem.status == _selectedStatus;
-
+          _selectedStatus == null || c.status == _selectedStatus;
       return matchesSearch && matchesStatus;
     }).toList();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  Color _statusColor(CaseStatus s) => switch (s) {
+    CaseStatus.SUBMITTED => _blueAccent,
+    CaseStatus.UNDER_REVIEW => _amberAccent,
+    CaseStatus.APPROVED => _forestGreen,
+    CaseStatus.REJECTED => _redAccent,
+  };
+
+  Color _statusSurface(CaseStatus s) => switch (s) {
+    CaseStatus.SUBMITTED => _blueSurface,
+    CaseStatus.UNDER_REVIEW => _amberSurface,
+    CaseStatus.APPROVED => _forestGreenSurface,
+    CaseStatus.REJECTED => _redSurface,
+  };
+
+  String _statusLabel(CaseStatus s) => switch (s) {
+    CaseStatus.SUBMITTED => 'Submitted',
+    CaseStatus.UNDER_REVIEW => 'Under Review',
+    CaseStatus.APPROVED => 'Approved',
+    CaseStatus.REJECTED => 'Rejected',
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('View Cases'), elevation: 0),
-      body: Consumer<CaseProvider>(
-        builder: (context, caseProvider, _) {
-          if (caseProvider.isLoadingCases && caseProvider.cases.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading cases...'),
-                ],
-              ),
-            );
-          }
-
-          if (caseProvider.error != null && caseProvider.cases.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load cases',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      caseProvider.error ?? 'Unknown error',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadCases,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final filteredCases = _getFilteredCases(caseProvider.cases);
-
-          if (caseProvider.cases.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No cases found',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Your submitted cases will appear here',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return SingleChildScrollView(
-            child: Column(
+      backgroundColor: _warmBg,
+      body: FadeTransition(
+        opacity: CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
+        child: Consumer<CaseProvider>(
+          builder: (context, caseProvider, _) {
+            return Column(
               children: [
-                // Search and Filter Section
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Search Box
-                      TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText:
-                              'Search by case ID, animal type, or symptoms',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _filterCases();
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                        ),
-                        onChanged: (value) {
-                          _filterCases();
-                          setState(() => _searchQuery = value);
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                _CasesHeader(onBack: () => Navigator.of(context).pop()),
+                Expanded(child: _buildBody(caseProvider)),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
-                      // Status Filter
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            FilterChip(
-                              label: const Text('All'),
-                              selected: _selectedStatus == null,
-                              onSelected: (_) {
-                                setState(() => _selectedStatus = null);
-                                _filterCases();
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            ...CaseStatus.values.map((status) {
-                              return FilterChip(
-                                label: Text(status.name),
-                                selected: _selectedStatus == status,
-                                onSelected: (_) {
-                                  setState(() => _selectedStatus = status);
-                                  _filterCases();
-                                },
-                              );
-                            }),
-                          ],
-                        ),
+  Widget _buildBody(CaseProvider caseProvider) {
+    // Loading state
+    if (caseProvider.isLoadingCases && caseProvider.cases.isEmpty) {
+      return _CenteredState(
+        iconBg: _forestGreenSurface,
+        icon: Icons.hourglass_top_rounded,
+        iconColor: _forestGreen,
+        title: 'Loading cases…',
+        subtitle: null,
+      );
+    }
+
+    // Error state
+    if (caseProvider.error != null && caseProvider.cases.isEmpty) {
+      return _CenteredState(
+        iconBg: _redSurface,
+        icon: Icons.error_outline_rounded,
+        iconColor: _redAccent,
+        title: 'Failed to load cases',
+        subtitle: caseProvider.error,
+        action: TextButton.icon(
+          onPressed: _loadCases,
+          icon: const Icon(Icons.refresh_rounded, size: 16),
+          label: const Text('Retry'),
+          style: TextButton.styleFrom(foregroundColor: _forestGreen),
+        ),
+      );
+    }
+
+    final filtered = _getFilteredCases(caseProvider.cases);
+
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        // Search + filter bar
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Search field
+                Container(
+                  decoration: BoxDecoration(
+                    color: _cardBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _borderColor, width: 0.5),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: _textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    decoration: InputDecoration(
+                      hintText: 'Search by animal, symptoms or ID…',
+                      hintStyle: const TextStyle(
+                        fontSize: 13,
+                        color: _textMuted,
                       ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: _labelColor,
+                        size: 20,
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: _labelColor,
+                                size: 18,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Filter chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        isSelected: _selectedStatus == null,
+                        color: _forestGreen,
+                        surface: _forestGreenSurface,
+                        onTap: () => setState(() => _selectedStatus = null),
+                      ),
+                      const SizedBox(width: 8),
+                      for (final status in CaseStatus.values) ...[
+                        _FilterChip(
+                          label: _statusLabel(status),
+                          isSelected: _selectedStatus == status,
+                          color: _statusColor(status),
+                          surface: _statusSurface(status),
+                          onTap: () => setState(() => _selectedStatus = status),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
 
-                // Cases List
-                if (filteredCases.isEmpty)
+                // Results count
+                if (filtered.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.all(32.0),
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'No cases match your search',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                  )
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredCases.length,
-                    itemBuilder: (context, index) {
-                      final caseItem = filteredCases[index];
-                      return _CaseCard(
-                        caseItem: caseItem,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ViewCaseDetailScreen(caseId: caseItem.id),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-
-                // Pagination (if needed)
-                if (caseProvider.cases.length == _itemsPerPage)
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _currentPage > 1
-                              ? () {
-                                  setState(() => _currentPage--);
-                                  _loadCases();
-                                }
-                              : null,
-                          icon: const Icon(Icons.arrow_back),
-                          label: const Text('Previous'),
-                        ),
-                        const SizedBox(width: 16),
-                        Text('Page $_currentPage'),
-                        const SizedBox(width: 16),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() => _currentPage++);
-                            _loadCases();
-                          },
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text('Next'),
-                        ),
-                      ],
+                      '${filtered.length} case${filtered.length == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                        color: _labelColor,
+                      ),
                     ),
                   ),
               ],
             ),
-          );
-        },
+          ),
+        ),
+
+        // Empty state
+        if (filtered.isEmpty)
+          SliverFillRemaining(
+            child: _CenteredState(
+              iconBg: _amberSurface,
+              icon: Icons.inbox_outlined,
+              iconColor: _amberAccent,
+              title: 'No cases found',
+              subtitle: 'Try adjusting your search or filters',
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final c = filtered[index];
+                  return _CaseCard(
+                    caseItem: c,
+                    statusColor: _statusColor(c.status),
+                    statusSurface: _statusSurface(c.status),
+                    statusLabel: _statusLabel(c.status),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ViewCaseDetailScreen(caseId: c.id),
+                      ),
+                    ),
+                  );
+                },
+                childCount: filtered.length,
+                addAutomaticKeepAlives: false,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ─── Header ──────────────────────────────────────────────────────────────────
+
+class _CasesHeader extends StatelessWidget {
+  const _CasesHeader({required this.onBack});
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+
+    return Container(
+      color: _forestGreen,
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(24, topPad + 16, 24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: onBack,
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.15),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      size: 18,
+                      color: Color(0xFFB0C8B8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: _forestGreenLight,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.list_alt_rounded,
+                        color: Color(0xFFA8D4B8),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'View cases',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xFFE8F0EB),
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'All submitted disease cases',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _forestGreenMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+              ],
+            ),
+          ),
+          Container(
+            height: 26,
+            decoration: const BoxDecoration(
+              color: _warmBg,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(26),
+                topRight: Radius.circular(26),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _CaseCard extends StatelessWidget {
-  final Case caseItem;
+// ─── Filter chip ──────────────────────────────────────────────────────────────
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.color,
+    required this.surface,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final Color color;
+  final Color surface;
   final VoidCallback onTap;
-
-  const _CaseCard({required this.caseItem, required this.onTap});
-
-  Color _getStatusColor(CaseStatus status) {
-    return switch (status) {
-      CaseStatus.SUBMITTED => Colors.blue,
-      CaseStatus.UNDER_REVIEW => Colors.orange,
-      CaseStatus.APPROVED => Colors.green,
-      CaseStatus.REJECTED => Colors.red,
-    };
-  }
-
-  Color _getSeverityColor(CaseSeverity severity) {
-    return switch (severity) {
-      CaseSeverity.MILD => Colors.green,
-      CaseSeverity.MODERATE => Colors.yellow[700]!,
-      CaseSeverity.SEVERE => Colors.orange,
-      CaseSeverity.CRITICAL => Colors.red,
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Case Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Case ID: ${caseItem.id.substring(0, 8)}...',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey[600]),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          caseItem.animalType,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color : _cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? color : _borderColor,
+            width: isSelected ? 1 : 0.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : _labelColor,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Case card ────────────────────────────────────────────────────────────────
+
+class _CaseCard extends StatefulWidget {
+  const _CaseCard({
+    required this.caseItem,
+    required this.statusColor,
+    required this.statusSurface,
+    required this.statusLabel,
+    required this.onTap,
+  });
+
+  final Case caseItem;
+  final Color statusColor;
+  final Color statusSurface;
+  final String statusLabel;
+  final VoidCallback onTap;
+
+  @override
+  State<_CaseCard> createState() => _CaseCardState();
+}
+
+class _CaseCardState extends State<_CaseCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pressCtrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressCtrl = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 0.975,
+    ).animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _pressCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.caseItem;
+    final shortId = c.id.length > 8 ? '${c.id.substring(0, 8)}…' : c.id;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: ScaleTransition(
+        scale: _scale,
+        child: GestureDetector(
+          onTapDown: (_) => _pressCtrl.forward(),
+          onTapUp: (_) {
+            _pressCtrl.reverse();
+            widget.onTap();
+          },
+          onTapCancel: () => _pressCtrl.reverse(),
+          child: Container(
+            decoration: BoxDecoration(
+              color: _cardBg,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _borderColor, width: 0.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Card header strip
+                Container(
+                  decoration: BoxDecoration(
+                    color: widget.statusSurface,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(17),
+                      topRight: Radius.circular(17),
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(
-                            caseItem.status,
-                          ).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          caseItem.status.name,
-                          style: TextStyle(
-                            color: _getStatusColor(caseItem.status),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getSeverityColor(
-                            caseItem.severity,
-                          ).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          caseItem.severity.name,
-                          style: TextStyle(
-                            color: _getSeverityColor(caseItem.severity),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Case Details
-              Row(
-                children: [
-                  Icon(Icons.pets, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Gender: ${caseItem.gender.name}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  if (caseItem.ageMonths != null)
-                    Text(
-                      'Age: ${caseItem.ageMonths} months',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Symptoms Preview
-              Text(
-                'Symptoms: ${caseItem.symptoms.length > 60 ? '${caseItem.symptoms.substring(0, 60)}...' : caseItem.symptoms}',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-
-              // Image Count & Date
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.image, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
                       Text(
-                        '${caseItem.images?.length ?? 0} images',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                        'ID: $shortId',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: widget.statusColor,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: widget.statusColor,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.statusLabel.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    _formatDate(caseItem.createdAt),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                ),
+
+                // Card body
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Animal type + arrow
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              c.animalType,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: _textPrimary,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: widget.statusSurface,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 14,
+                              color: widget.statusColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Meta row
+                      Row(
+                        children: [
+                          _MetaChip(
+                            icon: Icons.health_and_safety_outlined,
+                            label: 'Disease case',
+                            iconColor: _forestGreen,
+                          ),
+                          const SizedBox(width: 10),
+                          _MetaChip(
+                            icon: Icons.calendar_today_outlined,
+                            label: _formatDate(c.createdAt),
+                            iconColor: _blueAccent,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Symptoms
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _warmBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: _borderColor, width: 0.5),
+                        ),
+                        child: Text(
+                          c.symptoms,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: _labelColor,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Footer
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEEDFE),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.image_outlined,
+                              size: 14,
+                              color: Color(0xFF534AB7),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${c.images?.length ?? 0} image${(c.images?.length ?? 0) == 1 ? '' : 's'}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: _textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
+  String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
+}
 
-    if (difference.inDays > 7) {
-      return '${date.day}/${date.month}/${date.year}';
-    } else if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
+// ─── Meta chip ────────────────────────────────────────────────────────────────
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: iconColor),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: _labelColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Centered state (loading / error / empty) ─────────────────────────────────
+
+class _CenteredState extends StatelessWidget {
+  const _CenteredState({
+    required this.iconBg,
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    this.action,
+  });
+
+  final Color iconBg;
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String? subtitle;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, size: 36, color: iconColor),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: _textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: _textMuted,
+                  height: 1.5,
+                ),
+              ),
+            ],
+            if (action != null) ...[const SizedBox(height: 20), action!],
+          ],
+        ),
+      ),
+    );
   }
 }

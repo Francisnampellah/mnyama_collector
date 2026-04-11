@@ -2,484 +2,534 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/case_models.dart';
 import '../providers/case_provider.dart';
-import '../services/image_loading_service.dart';
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const _forestGreen = Color(0xFF1A3D2B);
+const _forestGreenLight = Color(0xFF2D6647);
+const _forestGreenMuted = Color(0xFF7AAB8A);
+const _forestGreenSurface = Color(0xFFEAF3EC);
+const _warmBg = Color(0xFFF7F5F0);
+const _cardBg = Color(0xFFFFFFFF);
+const _borderColor = Color(0xFFE0DDD8);
+const _textPrimary = Color(0xFF1C1C1E);
+const _textMuted = Color(0xFFA09D98);
+const _labelColor = Color(0xFF8A8880);
+
+const _blueAccent = Color(0xFF185FA5);
+const _blueSurface = Color(0xFFEEF4FB);
+const _amberAccent = Color(0xFFBA7517);
+const _amberSurface = Color(0xFFFBF4E8);
+const _redAccent = Color(0xFFA32D2D);
+const _redSurface = Color(0xFFFCEBEB);
+const _purpleAccent = Color(0xFF534AB7);
+const _purpleSurface = Color(0xFFEEEDFE);
+// ─────────────────────────────────────────────────────────────────────────────
 
 class ViewCaseDetailScreen extends StatefulWidget {
   final String caseId;
-
   const ViewCaseDetailScreen({super.key, required this.caseId});
 
   @override
   State<ViewCaseDetailScreen> createState() => _ViewCaseDetailScreenState();
 }
 
-class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen> {
+class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
+    with TickerProviderStateMixin {
   late PageController _imagePageController;
   int _currentImageIndex = 0;
+  late AnimationController _fadeController;
 
   @override
   void initState() {
     super.initState();
     _imagePageController = PageController();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeController.forward();
     _loadCaseDetails();
-  }
-
-  Future<void> _loadCaseDetails() async {
-    await context.read<CaseProvider>().getCaseById(widget.caseId);
-
-    // Test image URLs after case loads
-    if (mounted) {
-      final caseData = context.read<CaseProvider>().currentCase;
-      if (caseData?.images != null && caseData!.images!.isNotEmpty) {
-        _testImageUrls(caseData.images!);
-      }
-    }
-  }
-
-  Future<void> _testImageUrls(List<CaseImage> images) async {
-    print('[ViewCaseDetail] ========== IMAGE URL DIAGNOSTICS ==========');
-    print('[ViewCaseDetail] Total images: ${images.length}');
-
-    final imageService = ImageLoadingService();
-
-    for (var i = 0; i < images.length; i++) {
-      final image = images[i];
-      print('[ViewCaseDetail] ');
-      print('[ViewCaseDetail] Image ${i + 1}/${images.length}:');
-      print('[ViewCaseDetail] - File name: ${image.fileName}');
-      print('[ViewCaseDetail] - MIME type: ${image.mimeType}');
-      print('[ViewCaseDetail] - File size: ${image.fileSize} bytes');
-      print('[ViewCaseDetail] - URL: ${image.imageUrl}');
-
-      // Test if URL is accessible
-      final isAccessible = await imageService.isUrlAccessible(image.imageUrl);
-      print('[ViewCaseDetail] - URL accessible: $isAccessible');
-
-      // Get file size from server
-      final serverFileSize = await imageService.getImageSize(image.imageUrl);
-      print(
-        '[ViewCaseDetail] - Server file size: ${serverFileSize ?? "N/A"} bytes',
-      );
-    }
-
-    print('[ViewCaseDetail] ========== END DIAGNOSTICS ==========');
   }
 
   @override
   void dispose() {
     _imagePageController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
-  Color _getStatusColor(CaseStatus status) {
-    return switch (status) {
-      CaseStatus.SUBMITTED => Colors.blue,
-      CaseStatus.UNDER_REVIEW => Colors.orange,
-      CaseStatus.APPROVED => Colors.green,
-      CaseStatus.REJECTED => Colors.red,
-    };
+  Future<void> _loadCaseDetails() async {
+    await context.read<CaseProvider>().getCaseById(widget.caseId);
   }
 
-  Color _getSeverityColor(CaseSeverity severity) {
-    return switch (severity) {
-      CaseSeverity.MILD => Colors.green,
-      CaseSeverity.MODERATE => Colors.yellow[700]!,
-      CaseSeverity.SEVERE => Colors.orange,
-      CaseSeverity.CRITICAL => Colors.red,
-    };
-  }
+  // ── Status helpers ───────────────────────────────────────────────────────────
+
+  Color _statusColor(CaseStatus s) => switch (s) {
+    CaseStatus.SUBMITTED => _blueAccent,
+    CaseStatus.UNDER_REVIEW => _amberAccent,
+    CaseStatus.APPROVED => _forestGreen,
+    CaseStatus.REJECTED => _redAccent,
+  };
+
+  Color _statusSurface(CaseStatus s) => switch (s) {
+    CaseStatus.SUBMITTED => _blueSurface,
+    CaseStatus.UNDER_REVIEW => _amberSurface,
+    CaseStatus.APPROVED => _forestGreenSurface,
+    CaseStatus.REJECTED => _redSurface,
+  };
+
+  String _statusLabel(CaseStatus s) => switch (s) {
+    CaseStatus.SUBMITTED => 'Submitted',
+    CaseStatus.UNDER_REVIEW => 'Under Review',
+    CaseStatus.APPROVED => 'Approved',
+    CaseStatus.REJECTED => 'Rejected',
+  };
+
+  // ── Severity helpers ─────────────────────────────────────────────────────────
+
+  Color _severityColor(CaseSeverity s) => switch (s) {
+    CaseSeverity.MILD => _forestGreen,
+    CaseSeverity.MODERATE => _amberAccent,
+    CaseSeverity.SEVERE => const Color(0xFFB45309),
+    CaseSeverity.CRITICAL => _redAccent,
+  };
+
+  Color _severitySurface(CaseSeverity s) => switch (s) {
+    CaseSeverity.MILD => _forestGreenSurface,
+    CaseSeverity.MODERATE => _amberSurface,
+    CaseSeverity.SEVERE => const Color(0xFFFEF3C7),
+    CaseSeverity.CRITICAL => _redSurface,
+  };
+
+  String _severityLabel(CaseSeverity s) => switch (s) {
+    CaseSeverity.MILD => 'Mild',
+    CaseSeverity.MODERATE => 'Moderate',
+    CaseSeverity.SEVERE => 'Severe',
+    CaseSeverity.CRITICAL => 'Critical',
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Case Details'), elevation: 0),
-      body: Consumer<CaseProvider>(
-        builder: (context, caseProvider, _) {
-          if (caseProvider.isLoadingCases) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: _warmBg,
+      body: FadeTransition(
+        opacity: CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
+        child: Consumer<CaseProvider>(
+          builder: (context, caseProvider, _) {
+            // Loading
+            if (caseProvider.isLoadingCases) {
+              return Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading case details...'),
+                  _DetailHeader(
+                    animalType: null,
+                    statusLabel: null,
+                    statusColor: _forestGreen,
+                    statusSurface: _forestGreenSurface,
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: _forestGreen,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
                 ],
-              ),
-            );
-          }
+              );
+            }
 
-          if (caseProvider.error != null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load case details',
-                      style: Theme.of(context).textTheme.titleLarge,
+            // Error
+            if (caseProvider.error != null) {
+              return Column(
+                children: [
+                  _DetailHeader(
+                    animalType: null,
+                    statusLabel: null,
+                    statusColor: _forestGreen,
+                    statusSurface: _forestGreenSurface,
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: _redSurface,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(
+                                Icons.error_outline_rounded,
+                                size: 36,
+                                color: _redAccent,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Failed to load case',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: _textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              caseProvider.error ?? 'Unknown error',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: _textMuted,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            TextButton.icon(
+                              onPressed: _loadCaseDetails,
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              label: const Text('Retry'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: _forestGreen,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      caseProvider.error ?? 'Unknown error',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadCaseDetails,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+                  ),
+                ],
+              );
+            }
 
-          final caseItem = caseProvider.currentCase;
-          if (caseItem == null) {
-            return const Center(child: Text('No case found'));
-          }
+            final caseItem = caseProvider.currentCase;
+            if (caseItem == null) {
+              return const Center(child: Text('No case found'));
+            }
 
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            final sColor = _statusColor(caseItem.status);
+            final sSurface = _statusSurface(caseItem.status);
+
+            return Column(
               children: [
-                // Case Header Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(context).primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Status and Severity Badges
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(
-                                caseItem.status,
-                              ).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _getStatusColor(caseItem.status),
+                _DetailHeader(
+                  animalType: caseItem.animalType,
+                  statusLabel: _statusLabel(caseItem.status),
+                  statusColor: sColor,
+                  statusSurface: sSurface,
+                  onBack: () => Navigator.of(context).pop(),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Status + Severity chips
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _SummaryChip(
+                                icon: Icons.info_outlined,
+                                label: 'Status',
+                                value: _statusLabel(caseItem.status),
+                                iconColor: sColor,
+                                iconBg: sSurface,
                               ),
                             ),
-                            child: Text(
-                              caseItem.status.name,
-                              style: TextStyle(
-                                color: _getStatusColor(caseItem.status),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _SummaryChip(
+                                icon: Icons.warning_amber_rounded,
+                                label: 'Severity',
+                                value: _severityLabel(caseItem.severity),
+                                iconColor: _severityColor(caseItem.severity),
+                                iconBg: _severitySurface(caseItem.severity),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getSeverityColor(
-                                caseItem.severity,
-                              ).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _getSeverityColor(caseItem.severity),
-                              ),
-                            ),
-                            child: Text(
-                              caseItem.severity.name,
-                              style: TextStyle(
-                                color: _getSeverityColor(caseItem.severity),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Images
+                        if (caseItem.images != null &&
+                            caseItem.images!.isNotEmpty) ...[
+                          _buildImageGallery(caseItem.images!),
+                          const SizedBox(height: 16),
                         ],
-                      ),
-                      const SizedBox(height: 12),
 
-                      // Case ID
-                      Text(
-                        'Case ID',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                        // Animal information
+                        _DetailSection(
+                          icon: Icons.pets_outlined,
+                          iconColor: _amberAccent,
+                          iconBg: _amberSurface,
+                          title: 'Animal information',
+                          children: [
+                            _InfoRow(
+                              label: 'Type',
+                              value: caseItem.animalType,
+                              icon: Icons.pets_outlined,
+                              iconColor: _amberAccent,
+                              iconBg: _amberSurface,
+                            ),
+                            if (caseItem.breed != null) ...[
+                              _Divider(),
+                              _InfoRow(
+                                label: 'Breed',
+                                value: caseItem.breed!,
+                                icon: Icons.grain_outlined,
+                                iconColor: _amberAccent,
+                                iconBg: _amberSurface,
+                              ),
+                            ],
+                            _Divider(),
+                            _InfoRow(
+                              label: 'Gender',
+                              value: caseItem.gender.name.toUpperCase(),
+                              icon: Icons.wc_outlined,
+                              iconColor: _amberAccent,
+                              iconBg: _amberSurface,
+                            ),
+                            if (caseItem.ageMonths != null) ...[
+                              _Divider(),
+                              _InfoRow(
+                                label: 'Age',
+                                value: '${caseItem.ageMonths} months',
+                                icon: Icons.calendar_today_outlined,
+                                iconColor: _amberAccent,
+                                iconBg: _amberSurface,
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
-                      Text(
-                        caseItem.id,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(height: 14),
+
+                        // Disease information
+                        _DetailSection(
+                          icon: Icons.health_and_safety_outlined,
+                          iconColor: _forestGreen,
+                          iconBg: _forestGreenSurface,
+                          title: 'Disease information',
+                          children: [
+                            _InfoRow(
+                              label: 'Disease ID',
+                              value: caseItem.diseaseLabelId,
+                              icon: Icons.health_and_safety_outlined,
+                              iconColor: _forestGreen,
+                              iconBg: _forestGreenSurface,
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+
+                        // Clinical information
+                        _DetailSection(
+                          icon: Icons.medical_information_outlined,
+                          iconColor: _redAccent,
+                          iconBg: _redSurface,
+                          title: 'Clinical information',
+                          children: [
+                            _InfoBlock(
+                              label: 'Symptoms',
+                              value: caseItem.symptoms,
+                            ),
+                            if (caseItem.diagnosis != null) ...[
+                              _Divider(),
+                              _InfoBlock(
+                                label: 'Diagnosis',
+                                value: caseItem.diagnosis!,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Additional information
+                        if (caseItem.farmLocation != null ||
+                            caseItem.notes != null) ...[
+                          _DetailSection(
+                            icon: Icons.location_on_outlined,
+                            iconColor: _blueAccent,
+                            iconBg: _blueSurface,
+                            title: 'Additional information',
+                            children: [
+                              if (caseItem.farmLocation != null)
+                                _InfoRow(
+                                  label: 'Farm Location',
+                                  value: caseItem.farmLocation!,
+                                  icon: Icons.location_on_outlined,
+                                  iconColor: _blueAccent,
+                                  iconBg: _blueSurface,
+                                ),
+                              if (caseItem.farmLocation != null &&
+                                  caseItem.notes != null)
+                                _Divider(),
+                              if (caseItem.notes != null)
+                                _InfoBlock(
+                                  label: 'Notes',
+                                  value: caseItem.notes!,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // Timeline
+                        _DetailSection(
+                          icon: Icons.schedule_outlined,
+                          iconColor: _purpleAccent,
+                          iconBg: _purpleSurface,
+                          title: 'Timeline',
+                          children: [
+                            _TimelineRow(
+                              label: 'Submitted',
+                              value: _formatDateTime(caseItem.createdAt),
+                              isFirst: true,
+                              dotColor: _forestGreen,
+                            ),
+                            _TimelineRow(
+                              label: 'Last updated',
+                              value: _formatDateTime(caseItem.updatedAt),
+                              isFirst: false,
+                              dotColor: _purpleAccent,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-
-                // Case Images
-                if (caseItem.images != null && caseItem.images!.isNotEmpty)
-                  _CaseImagesSection(
-                    images: caseItem.images!,
-                    pageController: _imagePageController,
-                    onPageChanged: (index) {
-                      setState(() => _currentImageIndex = index);
-                    },
-                    currentIndex: _currentImageIndex,
-                  ),
-
-                // Animal Information
-                _DetailSection(
-                  title: 'Animal Information',
-                  children: [
-                    _DetailRow(
-                      label: 'Animal Type',
-                      value: caseItem.animalType,
-                    ),
-                    if (caseItem.breed != null)
-                      _DetailRow(label: 'Breed', value: caseItem.breed!),
-                    _DetailRow(label: 'Gender', value: caseItem.gender.name),
-                    if (caseItem.ageMonths != null)
-                      _DetailRow(
-                        label: 'Age',
-                        value: '${caseItem.ageMonths} months',
-                      ),
-                  ],
-                ),
-
-                // Clinical Information
-                _DetailSection(
-                  title: 'Clinical Information',
-                  children: [
-                    _DetailColumn(label: 'Symptoms', value: caseItem.symptoms),
-                    if (caseItem.diagnosis != null)
-                      _DetailColumn(
-                        label: 'Diagnosis',
-                        value: caseItem.diagnosis!,
-                      ),
-                  ],
-                ),
-
-                // Additional Information
-                _DetailSection(
-                  title: 'Additional Information',
-                  children: [
-                    if (caseItem.farmLocation != null)
-                      _DetailRow(
-                        label: 'Farm Location',
-                        value: caseItem.farmLocation!,
-                      ),
-                    if (caseItem.notes != null)
-                      _DetailColumn(label: 'Notes', value: caseItem.notes!),
-                  ],
-                ),
-
-                // Timeline
-                _DetailSection(
-                  title: 'Timeline',
-                  children: [
-                    _DetailRow(
-                      label: 'Created',
-                      value: _formatDateTime(caseItem.createdAt),
-                    ),
-                    _DetailRow(
-                      label: 'Last Updated',
-                      value: _formatDateTime(caseItem.updatedAt),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
               ],
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
-}
+  // ── Image gallery ─────────────────────────────────────────────────────────────
 
-class _CaseImagesSection extends StatelessWidget {
-  final List<CaseImage> images;
-  final PageController pageController;
-  final ValueChanged<int> onPageChanged;
-  final int currentIndex;
-
-  const _CaseImagesSection({
-    required this.images,
-    required this.pageController,
-    required this.onPageChanged,
-    required this.currentIndex,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildImageGallery(List<CaseImage> images) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderColor, width: 0.5),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Case Images (${images.length})',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          // Gallery header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: _purpleSurface,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.image_outlined,
+                        size: 17,
+                        color: _purpleAccent,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Case images',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: _textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _purpleSurface,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_currentImageIndex + 1} / ${images.length}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _purpleAccent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
 
-          // Image Carousel
+          // Main image carousel
           SizedBox(
-            height: 300,
+            height: 260,
             child: PageView.builder(
-              controller: pageController,
-              onPageChanged: onPageChanged,
+              controller: _imagePageController,
+              onPageChanged: (i) => setState(() => _currentImageIndex = i),
               itemCount: images.length,
               itemBuilder: (context, index) {
-                final image = images[index];
-                print(
-                  '[ViewCaseDetail] Loading image ${index + 1}/${images.length}',
-                );
-                print('[ViewCaseDetail] Image URL: ${image.imageUrl}');
-                print('[ViewCaseDetail] File name: ${image.fileName}');
-
+                final img = images[index];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     child: Image.network(
-                      image.imageUrl,
+                      img.imageUrl,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-
-                        final percent =
-                            loadingProgress.expectedTotalBytes != null
-                            ? (loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!)
-                            : 0.0;
-
-                        return Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Animated shimmer background
-                            _AnimatedPlaceholder(percent: percent),
-
-                            // Progress info overlay
-                            Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Circular progress indicator
-                                  Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 80,
-                                        height: 80,
-                                        child: CircularProgressIndicator(
-                                          value: percent,
-                                          strokeWidth: 4,
-                                          backgroundColor: Colors.grey[200],
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Theme.of(context).primaryColor,
-                                              ),
-                                        ),
-                                      ),
-                                      // Percentage text
-                                      Text(
-                                        '${(percent * 100).toStringAsFixed(0)}%',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  // Size info
-                                  if (loadingProgress.expectedTotalBytes !=
-                                      null)
-                                    Text(
-                                      '${(loadingProgress.cumulativeBytesLoaded / 1024).toStringAsFixed(1)} / ${(loadingProgress.expectedTotalBytes! / 1024).toStringAsFixed(1)} KB',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    )
-                                  else
-                                    Text(
-                                      '${(loadingProgress.cumulativeBytesLoaded / 1024).toStringAsFixed(1)} KB',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Downloading...',
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey[600]),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        print('[ViewCaseDetail] Image.network error: $error');
-                        print('[ViewCaseDetail] Stack trace: $stackTrace');
+                      loadingBuilder: (ctx, child, prog) {
+                        if (prog == null) return child;
                         return Container(
-                          color: Colors.grey[300],
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.image_not_supported,
-                                size: 48,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Failed to load image',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Error: $error',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                          color: _warmBg,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: prog.expectedTotalBytes != null
+                                  ? prog.cumulativeBytesLoaded /
+                                        prog.expectedTotalBytes!
+                                  : null,
+                              color: _forestGreen,
+                              strokeWidth: 2,
+                            ),
                           ),
                         );
                       },
+                      errorBuilder: (_, __, ___) => Container(
+                        color: _warmBg,
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 40,
+                              color: _labelColor,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Failed to load',
+                              style: TextStyle(fontSize: 12, color: _textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -487,59 +537,230 @@ class _CaseImagesSection extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 12),
+          // Dot indicators
+          if (images.length > 1)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(images.length, (i) {
+                  final active = i == _currentImageIndex;
+                  return GestureDetector(
+                    onTap: () => _imagePageController.animateToPage(
+                      i,
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeInOut,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: active ? 20 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: active ? _forestGreen : _borderColor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            )
+          else
+            const SizedBox(height: 14),
 
-          // Image Info
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
+          // Thumbnail strip
+          if (images.length > 1)
+            SizedBox(
+              height: 74,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                itemCount: images.length,
+                itemBuilder: (context, index) {
+                  final selected = index == _currentImageIndex;
+                  return GestureDetector(
+                    onTap: () => _imagePageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeInOut,
+                    ),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selected ? _forestGreen : _borderColor,
+                          width: selected ? 2 : 0.5,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Image.network(
+                          images[index].imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: _warmBg,
+                            child: const Icon(
+                              Icons.broken_image_outlined,
+                              size: 20,
+                              color: _labelColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '${dt.day}/${dt.month}/${dt.year} at $h:$m';
+  }
+}
+
+// ─── Detail Header ────────────────────────────────────────────────────────────
+
+class _DetailHeader extends StatelessWidget {
+  const _DetailHeader({
+    required this.animalType,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.statusSurface,
+    required this.onBack,
+  });
+
+  final String? animalType;
+  final String? statusLabel;
+  final Color statusColor;
+  final Color statusSurface;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+
+    return Container(
+      color: _forestGreen,
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(24, topPad + 16, 24, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Image ${currentIndex + 1} of ${images.length}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                // Back + status badge row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: onBack,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.15),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_rounded,
+                          size: 18,
+                          color: Color(0xFFB0C8B8),
+                        ),
+                      ),
+                    ),
+                    if (statusLabel != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusSurface,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          statusLabel!.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  images[currentIndex].fileName,
-                  style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(height: 20),
+
+                // Icon + title
+                Row(
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: _forestGreenLight,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.description_outlined,
+                        color: Color(0xFFA8D4B8),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            animalType ?? 'Case details',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xFFE8F0EB),
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          const Text(
+                            'Disease case report',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _forestGreenMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${(images[currentIndex].fileSize / 1024).toStringAsFixed(2)} KB',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                ),
+                const SizedBox(height: 28),
               ],
             ),
           ),
-
-          // Image Indicators
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              images.length,
-              (index) => GestureDetector(
-                onTap: () => pageController.jumpToPage(index),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: index == currentIndex
-                        ? Theme.of(context).primaryColor
-                        : Colors.grey[400],
-                  ),
-                ),
+          Container(
+            height: 26,
+            decoration: const BoxDecoration(
+              color: _warmBg,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(26),
+                topRight: Radius.circular(26),
               ),
             ),
           ),
@@ -549,43 +770,61 @@ class _CaseImagesSection extends StatelessWidget {
   }
 }
 
-class _DetailSection extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
+// ─── Summary chip (status / severity) ────────────────────────────────────────
 
-  const _DetailSection({required this.title, required this.children});
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.iconColor,
+    required this.iconBg,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color iconColor;
+  final Color iconBg;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _borderColor, width: 0.5),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(8),
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children
-                  .expand(
-                    (child) => [
-                      child,
-                      if (child != children.last)
-                        Divider(color: Colors.grey[300], height: 16),
-                    ],
-                  )
-                  .toList(),
+            child: Icon(icon, size: 17, color: iconColor),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: _labelColor,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: _textPrimary,
             ),
           ),
         ],
@@ -594,30 +833,127 @@ class _DetailSection extends StatelessWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
+// ─── Detail section card ──────────────────────────────────────────────────────
+
+class _DetailSection extends StatelessWidget {
+  const _DetailSection({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderColor, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(icon, size: 18, color: iconColor),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: _textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(height: 0.5, color: _borderColor),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Info row (icon + label + value) ─────────────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+  });
+
   final String label;
   final String value;
-
-  const _DetailRow({required this.label, required this.value});
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 16, color: iconColor),
         ),
+        const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  color: _labelColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -625,11 +961,13 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _DetailColumn extends StatelessWidget {
+// ─── Info block (multiline text field) ───────────────────────────────────────
+
+class _InfoBlock extends StatelessWidget {
+  const _InfoBlock({required this.label, required this.value});
+
   final String label;
   final String value;
-
-  const _DetailColumn({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -638,87 +976,111 @@ class _DetailColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.bold,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: _labelColor,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(value, style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _warmBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _borderColor, width: 0.5),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              color: _textPrimary,
+              height: 1.6,
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
-// Animated placeholder with shimmer effect
-class _AnimatedPlaceholder extends StatefulWidget {
-  final double percent;
+// ─── Timeline row ─────────────────────────────────────────────────────────────
 
-  const _AnimatedPlaceholder({required this.percent});
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({
+    required this.label,
+    required this.value,
+    required this.isFirst,
+    required this.dotColor,
+  });
 
-  @override
-  State<_AnimatedPlaceholder> createState() => _AnimatedPlaceholderState();
-}
-
-class _AnimatedPlaceholderState extends State<_AnimatedPlaceholder>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _shimmerAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _shimmerAnimation = Tween<double>(
-      begin: 0.3,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final String label;
+  final String value;
+  final bool isFirst;
+  final Color dotColor;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _shimmerAnimation,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.grey[300]!.withOpacity(_shimmerAnimation.value),
-                Colors.grey[200]!.withOpacity(_shimmerAnimation.value),
-                Colors.grey[300]!.withOpacity(_shimmerAnimation.value),
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
+    return Padding(
+      padding: EdgeInsets.only(bottom: isFirst ? 14 : 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              if (isFirst)
+                Container(width: 1.5, height: 30, color: _borderColor),
+            ],
           ),
-          child: ShaderMask(
-            shaderCallback: (bounds) {
-              return LinearGradient(
-                begin: Alignment(-1.0 + widget.percent * 2, 0.0),
-                end: Alignment(-0.5 + widget.percent * 2, 0.0),
-                colors: [
-                  Colors.transparent,
-                  Colors.white.withOpacity(0.3),
-                  Colors.transparent,
-                ],
-              ).createShader(bounds);
-            },
-            child: Container(color: Colors.grey[300]),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  color: _labelColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _textPrimary,
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Shared divider ───────────────────────────────────────────────────────────
+
+class _Divider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 0.5,
+      color: _borderColor,
+      margin: const EdgeInsets.symmetric(vertical: 12),
     );
   }
 }
