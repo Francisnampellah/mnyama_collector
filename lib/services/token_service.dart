@@ -10,7 +10,7 @@ class TokenService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_tokenKey, token);
-      
+
       // Extract and save user ID from token
       final decodedToken = JwtDecoder.decode(token);
       final userId = decodedToken['sub'] ?? decodedToken['id'] ?? '';
@@ -47,7 +47,7 @@ class TokenService {
     try {
       final token = await getToken();
       if (token == null) return false;
-      
+
       return !JwtDecoder.isExpired(token);
     } catch (e) {
       return false;
@@ -59,7 +59,7 @@ class TokenService {
     try {
       final token = await getToken();
       if (token == null) return null;
-      
+
       return JwtDecoder.getExpirationDate(token);
     } catch (e) {
       rethrow;

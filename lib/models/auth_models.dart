@@ -27,10 +27,7 @@ class LoginRequest {
   final String email;
   final String password;
 
-  LoginRequest({
-    required this.email,
-    required this.password,
-  });
+  LoginRequest({required this.email, required this.password});
 
   factory LoginRequest.fromJson(Map<String, dynamic> json) =>
       _$LoginRequestFromJson(json);
@@ -43,10 +40,7 @@ class AuthResponse {
   final String token;
   final User user;
 
-  AuthResponse({
-    required this.token,
-    required this.user,
-  });
+  AuthResponse({required this.token, required this.user});
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>
       _$AuthResponseFromJson(json);
@@ -59,11 +53,7 @@ class ApiException implements Exception {
   final int? statusCode;
   final String? code;
 
-  ApiException({
-    required this.message,
-    this.statusCode,
-    this.code,
-  });
+  ApiException({required this.message, this.statusCode, this.code});
 
   @override
   String toString() => message;

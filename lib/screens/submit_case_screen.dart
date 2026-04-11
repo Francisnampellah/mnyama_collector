@@ -214,9 +214,13 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
         // Upload images if any selected
         if (_selectedImages.isNotEmpty) {
           print('[SubmitCaseScreen] ');
-          print('[SubmitCaseScreen] ========== STARTING IMAGE UPLOAD ==========');
-          print('[SubmitCaseScreen] Total images to upload: ${_selectedImages.length}');
-          
+          print(
+            '[SubmitCaseScreen] ========== STARTING IMAGE UPLOAD ==========',
+          );
+          print(
+            '[SubmitCaseScreen] Total images to upload: ${_selectedImages.length}',
+          );
+
           // Log detailed info about each image
           for (int i = 0; i < _selectedImages.length; i++) {
             final imageFile = _selectedImages[i];
@@ -235,9 +239,13 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
             print('[SubmitCaseScreen] ');
             print('[SubmitCaseScreen] Passing images to provider...');
             print('[SubmitCaseScreen] - Case ID: ${createdCase.id}');
-            print('[SubmitCaseScreen] - Images count: ${_selectedImages.length}');
-            print('[SubmitCaseScreen] - Images type: ${_selectedImages.runtimeType}');
-            
+            print(
+              '[SubmitCaseScreen] - Images count: ${_selectedImages.length}',
+            );
+            print(
+              '[SubmitCaseScreen] - Images type: ${_selectedImages.runtimeType}',
+            );
+
             await caseProvider.uploadCaseImages(
               createdCase.id,
               _selectedImages,

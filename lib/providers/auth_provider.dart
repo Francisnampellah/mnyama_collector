@@ -100,10 +100,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Login user
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     try {
       // Validation
       if (email.isEmpty || password.isEmpty) {
