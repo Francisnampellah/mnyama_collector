@@ -4,7 +4,9 @@ import 'providers/auth_provider.dart';
 import 'providers/case_provider.dart';
 import 'screens/auth/auth_wrapper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 

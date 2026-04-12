@@ -413,7 +413,25 @@ class CaseService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> caseList = data['data'] ?? [];
+
+        // Handle multiple response formats
+        List<dynamic> caseList = [];
+
+        if (data is List) {
+          // Direct list format
+          caseList = data;
+        } else if (data is Map) {
+          if (data['cases'] != null && data['cases'] is List) {
+            // Format: { "cases": [...] }
+            caseList = data['cases'] as List<dynamic>;
+          } else if (data['data'] != null && data['data'] is List) {
+            // Format: { "data": [...] }
+            caseList = data['data'] as List<dynamic>;
+          } else if (data['items'] != null && data['items'] is List) {
+            // Format: { "items": [...] }
+            caseList = data['items'] as List<dynamic>;
+          }
+        }
 
         return caseList
             .map((c) => Case.fromJson(c as Map<String, dynamic>))
@@ -460,9 +478,26 @@ class CaseService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final caseData = data['data'] ?? data;
 
-        return Case.fromJson(caseData as Map<String, dynamic>);
+        // Handle multiple response formats
+        Map<String, dynamic> caseData;
+
+        if (data is Map) {
+          if (data['case'] != null) {
+            // Format: { "case": {...} }
+            caseData = data['case'] as Map<String, dynamic>;
+          } else if (data['data'] != null) {
+            // Format: { "data": {...} }
+            caseData = data['data'] as Map<String, dynamic>;
+          } else {
+            // Direct case object
+            caseData = data as Map<String, dynamic>;
+          }
+        } else {
+          throw ApiException(message: 'Invalid response format');
+        }
+
+        return Case.fromJson(caseData);
       } else {
         final errorData = jsonDecode(response.body);
         throw ApiException(
@@ -484,136 +519,39 @@ class CaseService {
     List<File> images,
   ) async {
     try {
-      print('[CaseService] ========== BEGIN IMAGE UPLOAD ==========');
-      print('[CaseService] Input validation:');
-      print('[CaseService]   - Case ID: $caseId');
-      print('[CaseService]   - Number of images passed: ${images.length}');
-      print('[CaseService]   - Images list type: ${images.runtimeType}');
-      print('[CaseService]   - Images list isEmpty: ${images.isEmpty}');
-
-      // Check each image in the input list
-      for (int i = 0; i < images.length; i++) {
-        print('[CaseService] Input image $i:');
-        print('[CaseService]   - Path: ${images[i].path}');
-        print('[CaseService]   - Type: ${images[i].runtimeType}');
-        print('[CaseService]   - Exists (before upload): ${await images[i].exists()}');
+      if (images.isEmpty) {
+        throw ApiException(message: 'No images to upload');
       }
 
-      print('[CaseService] Retrieving authentication token...');
       final token = await TokenService.getToken();
-
       if (token == null) {
         throw ApiException(message: 'Authentication token not found');
       }
 
-      print('[CaseService] Token retrieved: ${token.substring(0, 20)}...');
-
-      if (images.isEmpty) {
-        print('[CaseService] ✗ ERROR: No images provided to upload');
-        throw ApiException(message: 'No images to upload');
-      }
-
-      print(
-        '[CaseService] ✓ Uploading ${images.length} images for case: $caseId',
-      );
-
       final uri = Uri.parse('$baseUrl/cases/$caseId/images');
-      print('[CaseService] Upload endpoint: $uri');
-
       final request = http.MultipartRequest('POST', uri);
-      print('[CaseService] ✓ MultipartRequest created');
-
-      // Add authorization header
       request.headers['Authorization'] = 'Bearer $token';
-      print('[CaseService] ✓ Authorization header added');
-
-      // Add images to request
-      print('[CaseService] Starting to add images to request...');
       for (int i = 0; i < images.length; i++) {
         final file = images[i];
 
-        print('[CaseService] ');
-        print('[CaseService] === IMAGE ${i + 1}/${images.length} ===');
-        print('[CaseService] File path: ${file.path}');
-
-        // Check if file exists
-        final exists = await file.exists();
-        print('[CaseService] File exists: $exists');
-        
-        if (!exists) {
-          print('[CaseService] ✗ Image ${i + 1} not found: ${file.path}');
+        if (!await file.exists()) {
           throw ApiException(message: 'Image file not found: ${file.path}');
         }
 
-        // Read file bytes
-        print('[CaseService] Reading file bytes...');
         final fileBytes = await file.readAsBytes();
-        print('[CaseService] ✓ File bytes read: ${fileBytes.length} bytes');
-        
-        if (fileBytes.isEmpty) {
-          print('[CaseService] ✗ WARNING: File is empty (0 bytes)');
-        }
-
         final fileName = file.path.split('/').last;
-        print('[CaseService] File name: $fileName');
-
-        // Detect MIME type from file extension
         final mimeType = _getMimeType(fileName);
-        print('[CaseService] MIME type detected: $mimeType');
 
-        print('[CaseService] Creating MultipartFile...');
-        // Create the multipart file
-        final multipartFile = http.MultipartFile.fromBytes(
-          'images', // IMPORTANT: Field name must be exactly 'images'
-          fileBytes,
-          filename: fileName,
-          contentType: MediaType.parse(mimeType),
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'images',
+            fileBytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
         );
-        
-        print('[CaseService] MultipartFile created:');
-        print('[CaseService]   - Field name: ${multipartFile.field}');
-        print('[CaseService]   - File name: ${multipartFile.filename}');
-        print('[CaseService]   - Content-Type: ${multipartFile.contentType}');
-        print('[CaseService]   - Size: ${multipartFile.length}');
-
-        // Add to request
-        print('[CaseService] Adding MultipartFile to request...');
-        request.files.add(multipartFile);
-        print('[CaseService] ✓ File added to request');
-        print('[CaseService] Current request file count: ${request.files.length}');
       }
 
-      print('[CaseService] ');
-      print('[CaseService] ========= FINAL REQUEST DETAILS BEFORE SEND =========');
-      print('[CaseService] Method: POST');
-      print('[CaseService] URL: $uri');
-      print('[CaseService] Headers:');
-      for (var entry in request.headers.entries) {
-        final value = entry.value;
-        final displayValue = entry.key == 'Authorization' ? value.substring(0, 20) + '...' : value;
-        print('[CaseService]   - ${entry.key}: $displayValue');
-      }
-      print('[CaseService] Total files in request: ${request.files.length}');
-      print('[CaseService] Total fields in request: ${request.fields.length}');
-      
-      if (request.files.isEmpty) {
-        print('[CaseService] ✗✗✗ CRITICAL ERROR: No files in request! ✗✗✗');
-      } else {
-        print('[CaseService] Files in request:');
-        for (int i = 0; i < request.files.length; i++) {
-          final file = request.files[i];
-          print('[CaseService]   File ${i + 1}:');
-          print('[CaseService]     - Field: ${file.field}');
-          print('[CaseService]     - Name: ${file.filename}');
-          print('[CaseService]     - Type: ${file.contentType}');
-          print('[CaseService]     - Size: ${file.length}');
-        }
-      }
-      print('[CaseService] =============================================');
-
-      print('[CaseService] Sending request...');
-
-      // Send request with timeout
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 60),
         onTimeout: () => throw ApiException(
@@ -622,13 +560,7 @@ class CaseService {
         ),
       );
 
-      print('[CaseService] ✓ Request sent successfully');
       final response = await http.Response.fromStream(streamedResponse);
-
-      print('[CaseService] ✓ Response received');
-      print('[CaseService] Response status: ${response.statusCode}');
-      print('[CaseService] Response body: ${response.body}');
-      print('[CaseService] Response headers: ${response.headers}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
@@ -638,38 +570,21 @@ class CaseService {
 
         if (data is List) {
           imageList = data;
-          print('[CaseService] Response format: Direct list');
         } else if (data is Map) {
           if (data['images'] != null && data['images'] is List) {
             imageList = data['images'] as List<dynamic>;
-            print('[CaseService] Response format: Map with "images" key');
           } else if (data['data'] != null && data['data'] is List) {
             imageList = data['data'] as List<dynamic>;
-            print('[CaseService] Response format: Map with "data" key');
           }
         }
-
-        print(
-          '[CaseService] Parsed ${imageList.length} image records from response',
-        );
 
         final result = imageList
             .map((img) => CaseImage.fromJson(img as Map<String, dynamic>))
             .toList();
 
-        print('[CaseService] ✓ Successfully parsed ${result.length} images');
-        for (int i = 0; i < result.length; i++) {
-          print('[CaseService]   Image ${i + 1}: ${result[i].imageUrl}');
-        }
-        print('[CaseService] ========== END IMAGE UPLOAD ==========');
-
         return result;
       } else {
         final errorBody = response.body;
-        print(
-          '[CaseService] ✗ Upload failed with status ${response.statusCode}',
-        );
-        print('[CaseService] Error response: $errorBody');
 
         try {
           final errorData = jsonDecode(errorBody);
@@ -687,12 +602,9 @@ class CaseService {
           );
         }
       }
-    } on ApiException catch (e) {
-      print('[CaseService] ✗ ApiException during upload: $e');
+    } on ApiException {
       rethrow;
-    } catch (e, stackTrace) {
-      print('[CaseService] ✗ Unexpected error during upload: $e');
-      print('[CaseService] Stack trace: $stackTrace');
+    } catch (e) {
       throw ApiException(
         message: 'An error occurred while uploading images: $e',
       );
