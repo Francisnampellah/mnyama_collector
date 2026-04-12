@@ -137,11 +137,13 @@ class CaseService {
       print('[CaseService] Sending case data to: $baseUrl/cases');
       print('[CaseService] Request body:');
       final requestBody = request.toJson();
+      print('[CaseService] Full request JSON: $requestBody');
       print(
         '[CaseService]   - Disease Label ID: ${requestBody['diseaseLabelId']}',
       );
       print('[CaseService]   - Animal Type: ${requestBody['animalType']}');
       print('[CaseService]   - Severity: ${requestBody['severity']}');
+      print('[CaseService]   - Gender: ${requestBody['gender']}');
 
       final response = await http
           .post(
@@ -162,35 +164,71 @@ class CaseService {
 
       print('[CaseService] Response status: ${response.statusCode}');
       print('[CaseService] Response body length: ${response.body.length}');
+      print(
+        '[CaseService] Response body (first 2000 chars): ${response.body.substring(0, response.body.length > 2000 ? 2000 : response.body.length)}',
+      );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
+        print('[CaseService] Parsing response JSON...');
         final data = jsonDecode(response.body);
+        print('[CaseService] Parsed data type: ${data.runtimeType}');
+        print('[CaseService] Full parsed data: $data');
+
         // Try multiple response formats: data, case, or direct
         final caseData = data['data'] ?? data['case'] ?? data;
+        print('[CaseService] Case data extracted: $caseData');
+        print('[CaseService] Case data type: ${caseData.runtimeType}');
+
+        // Log each field value and type for debugging
+        if (caseData is Map) {
+          print('[CaseService] Case data fields:');
+          caseData.forEach((key, value) {
+            print(
+              '[CaseService]   - $key: $value (type: ${value.runtimeType})',
+            );
+          });
+        }
 
         print('[CaseService] ✓ Case created successfully');
-        print('[CaseService] Response data: $caseData');
+        print('[CaseService] Attempting to parse Case object...');
 
-        final createdCase = Case.fromJson(caseData as Map<String, dynamic>);
+        try {
+          final createdCase = Case.fromJson(caseData as Map<String, dynamic>);
 
-        print('[CaseService] ✓ Case parsed successfully:');
-        print('[CaseService]   - ID: ${createdCase.id}');
-        print('[CaseService]   - Status: ${createdCase.status}');
-        print('[CaseService] ========== END CREATE CASE ==========');
+          print('[CaseService] ✓ Case parsed successfully:');
+          print('[CaseService]   - ID: ${createdCase.id}');
+          print('[CaseService]   - Status: ${createdCase.status}');
+          print('[CaseService]   - Created at: ${createdCase.createdAt}');
+          print('[CaseService] ========== END CREATE CASE ==========');
 
-        return createdCase;
+          return createdCase;
+        } catch (parseError, stackTrace) {
+          print('[CaseService] ✗ Error parsing Case object: $parseError');
+          print('[CaseService] Stack trace: $stackTrace');
+          print('[CaseService] Failed caseData: $caseData');
+          rethrow;
+        }
       } else {
         print(
           '[CaseService] ✗ Case creation failed with status: ${response.statusCode}',
         );
         print('[CaseService] Error response: ${response.body}');
 
-        final errorData = jsonDecode(response.body);
-        throw ApiException(
-          message: errorData['message'] ?? 'Failed to create case',
-          statusCode: response.statusCode,
-          code: errorData['code'],
-        );
+        try {
+          final errorData = jsonDecode(response.body);
+          print('[CaseService] Error data: $errorData');
+          throw ApiException(
+            message: errorData['message'] ?? 'Failed to create case',
+            statusCode: response.statusCode,
+            code: errorData['code'],
+          );
+        } catch (e) {
+          print('[CaseService] Error parsing error response: $e');
+          throw ApiException(
+            message: 'Failed to create case (${response.statusCode})',
+            statusCode: response.statusCode,
+          );
+        }
       }
     } on ApiException catch (e) {
       print('[CaseService] ✗ ApiException: $e');
@@ -332,6 +370,9 @@ class CaseService {
       print('[CaseService] Response status: ${response.statusCode}');
       print('[CaseService] Response body length: ${response.body.length}');
       print('[CaseService] Response headers: ${response.headers}');
+      print(
+        '[CaseService] Response body (first 2000 chars): ${response.body.substring(0, response.body.length > 2000 ? 2000 : response.body.length)}',
+      );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         print('[CaseService] Parsing response body...');
@@ -341,18 +382,41 @@ class CaseService {
         // Try multiple response formats: data, case, or direct
         final caseData = data['data'] ?? data['case'] ?? data;
 
+        print('[CaseService] Extracted caseData: $caseData');
+        print('[CaseService] CaseData type: ${caseData.runtimeType}');
+
+        // Log each field for debugging
+        if (caseData is Map) {
+          print('[CaseService] CaseData fields:');
+          caseData.forEach((key, value) {
+            print(
+              '[CaseService]   - $key: $value (type: ${value.runtimeType})',
+            );
+          });
+        }
+
         print('[CaseService] ✓ Case created successfully with image');
-        final createdCase = Case.fromJson(caseData as Map<String, dynamic>);
 
-        print('[CaseService] ✓ Case parsed successfully:');
-        print('[CaseService]   - ID: ${createdCase.id}');
-        print('[CaseService]   - Status: ${createdCase.status}');
-        print(
-          '[CaseService]   - Image count: ${createdCase.images?.length ?? 0}',
-        );
-        print('[CaseService] ========== END CREATE CASE WITH IMAGE ==========');
+        try {
+          final createdCase = Case.fromJson(caseData as Map<String, dynamic>);
 
-        return createdCase;
+          print('[CaseService] ✓ Case parsed successfully:');
+          print('[CaseService]   - ID: ${createdCase.id}');
+          print('[CaseService]   - Status: ${createdCase.status}');
+          print(
+            '[CaseService]   - Image count: ${createdCase.images?.length ?? 0}',
+          );
+          print(
+            '[CaseService] ========== END CREATE CASE WITH IMAGE ==========',
+          );
+
+          return createdCase;
+        } catch (parseError, stackTrace) {
+          print('[CaseService] ✗ Error parsing Case object: $parseError');
+          print('[CaseService] Stack trace: $stackTrace');
+          print('[CaseService] Failed caseData: $caseData');
+          rethrow;
+        }
       } else {
         print(
           '[CaseService] ✗ Case creation failed with status: ${response.statusCode}',
@@ -519,6 +583,10 @@ class CaseService {
     List<File> images,
   ) async {
     try {
+      print('[CaseService] ========== BEGIN UPLOAD CASE IMAGES ==========');
+      print('[CaseService] Case ID: $caseId');
+      print('[CaseService] Number of images: ${images.length}');
+
       if (images.isEmpty) {
         throw ApiException(message: 'No images to upload');
       }
@@ -528,11 +596,18 @@ class CaseService {
         throw ApiException(message: 'Authentication token not found');
       }
 
+      print('[CaseService] Token retrieved: ${token.substring(0, 20)}...');
+
       final uri = Uri.parse('$baseUrl/cases/$caseId/images');
+      print('[CaseService] Upload endpoint: $uri');
+
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
+
       for (int i = 0; i < images.length; i++) {
         final file = images[i];
+        print('[CaseService] Processing image ${i + 1}/${images.length}...');
+        print('[CaseService]   Path: ${file.path}');
 
         if (!await file.exists()) {
           throw ApiException(message: 'Image file not found: ${file.path}');
@@ -542,6 +617,10 @@ class CaseService {
         final fileName = file.path.split('/').last;
         final mimeType = _getMimeType(fileName);
 
+        print('[CaseService]   File name: $fileName');
+        print('[CaseService]   File size: ${fileBytes.length} bytes');
+        print('[CaseService]   MIME type: $mimeType');
+
         request.files.add(
           http.MultipartFile.fromBytes(
             'images',
@@ -550,7 +629,12 @@ class CaseService {
             contentType: MediaType.parse(mimeType),
           ),
         );
+
+        print('[CaseService]   ✓ Image added to request');
       }
+
+      print('[CaseService] Sending multipart request...');
+      print('[CaseService] Total files in request: ${request.files.length}');
 
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 60),
@@ -562,32 +646,79 @@ class CaseService {
 
       final response = await http.Response.fromStream(streamedResponse);
 
+      print('[CaseService] ✓ Response received');
+      print('[CaseService] Response status: ${response.statusCode}');
+      print('[CaseService] Response body length: ${response.body.length}');
+      print('[CaseService] Response headers: ${response.headers}');
+      print(
+        '[CaseService] Response body (first 1000 chars): ${response.body.substring(0, response.body.length > 1000 ? 1000 : response.body.length)}',
+      );
+
       if (response.statusCode == 200 || response.statusCode == 201) {
+        print('[CaseService] Parsing response JSON...');
         final data = jsonDecode(response.body);
+        print('[CaseService] Parsed data type: ${data.runtimeType}');
+        print('[CaseService] Full parsed data: $data');
 
         // Parse response - could be wrapped or direct
         List<dynamic> imageList = [];
 
         if (data is List) {
           imageList = data;
+          print('[CaseService] Response is direct list format');
         } else if (data is Map) {
+          print('[CaseService] Response is Map format');
+          print('[CaseService] Response keys: ${data.keys.toList()}');
+
           if (data['images'] != null && data['images'] is List) {
             imageList = data['images'] as List<dynamic>;
+            print('[CaseService] Using "images" key format');
           } else if (data['data'] != null && data['data'] is List) {
             imageList = data['data'] as List<dynamic>;
+            print('[CaseService] Using "data" key format');
+          } else {
+            print(
+              '[CaseService] WARNING: No recognized list key in response',
+            );
           }
         }
 
-        final result = imageList
-            .map((img) => CaseImage.fromJson(img as Map<String, dynamic>))
-            .toList();
+        print('[CaseService] Image list length: ${imageList.length}');
 
+        print('[CaseService] Parsing each image...');
+        final result = <CaseImage>[];
+        for (int i = 0; i < imageList.length; i++) {
+          try {
+            final img = imageList[i];
+            print('[CaseService] Image $i data type: ${img.runtimeType}');
+            print('[CaseService] Image $i data: $img');
+
+            final parsed = CaseImage.fromJson(img as Map<String, dynamic>);
+            result.add(parsed);
+
+            print('[CaseService] ✓ Image $i parsed successfully');
+            print('[CaseService]   - ID: ${parsed.id}');
+            print('[CaseService]   - File name: ${parsed.fileName}');
+            print('[CaseService]   - URL: ${parsed.imageUrl}');
+          } catch (e, stackTrace) {
+            print('[CaseService] ✗ Error parsing image $i: $e');
+            print('[CaseService] Stack trace: $stackTrace');
+            print('[CaseService] Problem image data: ${imageList[i]}');
+            rethrow;
+          }
+        }
+
+        print('[CaseService] ✓ All ${result.length} images parsed successfully');
+        print('[CaseService] ========== END UPLOAD CASE IMAGES ==========');
         return result;
       } else {
         final errorBody = response.body;
+        print('[CaseService] ✗ Upload failed with status ${response.statusCode}');
+        print('[CaseService] Error body: $errorBody');
 
         try {
           final errorData = jsonDecode(errorBody);
+          print('[CaseService] Error data parsed: $errorData');
           throw ApiException(
             message:
                 errorData['message'] ??
@@ -595,16 +726,20 @@ class CaseService {
             statusCode: response.statusCode,
             code: errorData['code'],
           );
-        } catch (_) {
+        } catch (e) {
+          print('[CaseService] Error parsing error response: $e');
           throw ApiException(
             message: 'Failed to upload images (${response.statusCode})',
             statusCode: response.statusCode,
           );
         }
       }
-    } on ApiException {
+    } on ApiException catch (e) {
+      print('[CaseService] ✗ ApiException: $e');
       rethrow;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[CaseService] ✗ Unexpected error: $e');
+      print('[CaseService] Stack trace: $stackTrace');
       throw ApiException(
         message: 'An error occurred while uploading images: $e',
       );

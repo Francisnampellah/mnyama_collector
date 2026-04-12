@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/case_models.dart';
+import '../models/auth_models.dart';
 import '../services/case_service.dart';
 
 class CaseProvider extends ChangeNotifier {
@@ -118,6 +119,7 @@ class CaseProvider extends ChangeNotifier {
   // Upload images for a case
   Future<void> uploadCaseImages(String caseId, List<File> images) async {
     print('[CaseProvider] ========== BEGIN IMAGE UPLOAD ==========');
+    print('[CaseProvider] Case ID: $caseId');
     print('[CaseProvider] Setting isSubmitting = true');
     _isSubmitting = true;
     _error = null;
@@ -135,13 +137,29 @@ class CaseProvider extends ChangeNotifier {
       }
 
       print('[CaseProvider] Calling CaseService.uploadCaseImages()...');
-      await CaseService.uploadCaseImages(caseId, images);
+      final uploadedImages =
+          await CaseService.uploadCaseImages(caseId, images);
 
       print('[CaseProvider] ✓ All images uploaded successfully');
+      print('[CaseProvider] Uploaded ${uploadedImages.length} images:');
+      for (int i = 0; i < uploadedImages.length; i++) {
+        print(
+          '[CaseProvider]   - Image ${i + 1}: ${uploadedImages[i].fileName}',
+        );
+        print('[CaseProvider]     URL: ${uploadedImages[i].imageUrl}');
+        print('[CaseProvider]     ID: ${uploadedImages[i].id}');
+      }
+
       _error = null;
     } catch (e, stackTrace) {
       print('[CaseProvider] ✗ Image upload failed: $e');
       print('[CaseProvider] Stack trace: $stackTrace');
+      print('[CaseProvider] Error type: ${e.runtimeType}');
+      if (e is ApiException) {
+        print('[CaseProvider] API Error message: ${e.message}');
+        print('[CaseProvider] API Error code: ${e.code}');
+        print('[CaseProvider] API Status code: ${e.statusCode}');
+      }
       _error = e.toString();
       rethrow;
     } finally {

@@ -98,22 +98,22 @@ class CreateCaseRequest {
 // Case Image Model
 @JsonSerializable()
 class CaseImage {
-  final String id;
+  final String? id;
   final String caseId;
   final String imageUrl;
   final String fileName;
   final String mimeType;
   final int fileSize;
-  final DateTime createdAt;
+  final DateTime? createdAt;
 
   CaseImage({
-    required this.id,
+    this.id,
     required this.caseId,
     required this.imageUrl,
     required this.fileName,
     required this.mimeType,
     required this.fileSize,
-    required this.createdAt,
+    this.createdAt,
   });
 
   factory CaseImage.fromJson(Map<String, dynamic> json) =>

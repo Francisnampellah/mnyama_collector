@@ -86,10 +86,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
     return Scaffold(
       backgroundColor: _warmBg,
       body: FadeTransition(
-        opacity: CurvedAnimation(
-          parent: _fadeController,
-          curve: Curves.easeIn,
-        ),
+        opacity: CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
         child: Consumer<CaseProvider>(
           builder: (context, caseProvider, _) {
             return Column(
@@ -289,8 +286,10 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: _forestGreenSurface,
                   borderRadius: BorderRadius.circular(20),
@@ -317,8 +316,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
               itemBuilder: (context, index) {
                 return Padding(
                   padding: EdgeInsets.only(
-                    right:
-                        index == _selectedImages.length - 1 ? 0 : 10,
+                    right: index == _selectedImages.length - 1 ? 0 : 10,
                   ),
                   child: Stack(
                     children: [
@@ -327,10 +325,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                         height: 110,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _borderColor,
-                            width: 0.5,
-                          ),
+                          border: Border.all(color: _borderColor, width: 0.5),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(11),
@@ -353,8 +348,11 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                               color: _redAccent,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.close,
-                                size: 13, color: Colors.white),
+                            child: const Icon(
+                              Icons.close,
+                              size: 13,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -380,20 +378,23 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
           decoration: _netyInputDecoration(label: 'Search disease…'),
         ),
         itemBuilder: (context, disease, _) => Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(disease.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: _textPrimary)),
+              Text(
+                disease.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: _textPrimary,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(disease.code,
-                  style: const TextStyle(
-                      fontSize: 11, color: _textMuted)),
+              Text(
+                disease.code,
+                style: const TextStyle(fontSize: 11, color: _textMuted),
+              ),
             ],
           ),
         ),
@@ -482,8 +483,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
       prefixIcon: prefixIcon != null
           ? Icon(prefixIcon, size: 18, color: _labelColor)
           : null,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: _borderColor, width: 0.5),
@@ -557,7 +557,9 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
   // ── Submit ───────────────────────────────────────────────────────────────────
 
   Future<void> _submitForm(
-      BuildContext context, CaseProvider caseProvider) async {
+    BuildContext context,
+    CaseProvider caseProvider,
+  ) async {
     if (!_formKey.currentState!.validate()) {
       _showSnack('Please fill in all required fields', isError: true);
       return;
@@ -575,13 +577,13 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
       final caseRequest = CreateCaseRequest(
         diseaseLabelId: _selectedDisease!.id,
         animalType: _animalType!,
-        breed: _breed,
+        breed: _breed ?? '',
         ageMonths: _ageMonths,
         gender: _gender ?? Gender.UNKNOWN,
         symptoms: _symptoms ?? '',
-        diagnosis: _diagnosis,
-        notes: _notes,
-        farmLocation: _farmLocation,
+        diagnosis: _diagnosis ?? '',
+        notes: _notes ?? '',
+        farmLocation: _farmLocation ?? '',
         severity: _severity ?? CaseSeverity.MODERATE,
       );
 
@@ -590,7 +592,9 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
       if (mounted) {
         _showSnack('Case submitted successfully!', isError: false);
         Future.delayed(const Duration(seconds: 1), () {
-          Navigator.of(context).pop();
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
         });
       }
     } catch (e) {
@@ -802,10 +806,7 @@ class _StepSection extends StatelessWidget {
           Container(height: 0.5, color: _borderColor),
 
           // Content
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.all(16), child: child),
         ],
       ),
     );
@@ -850,8 +851,10 @@ class _NeTyTextField extends StatelessWidget {
           fontWeight: FontWeight.w500,
         ),
         hintStyle: const TextStyle(fontSize: 13, color: _textMuted),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _borderColor, width: 0.5),
@@ -907,10 +910,7 @@ class _ImagePickerButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: _warmBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: _forestGreen.withOpacity(0.25),
-            width: 1,
-          ),
+          border: Border.all(color: _forestGreen.withOpacity(0.25), width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -944,10 +944,7 @@ class _ImagePickerButton extends StatelessWidget {
 // ─── Submit button ────────────────────────────────────────────────────────────
 
 class _SubmitButton extends StatefulWidget {
-  const _SubmitButton({
-    required this.isSubmitting,
-    required this.onTap,
-  });
+  const _SubmitButton({required this.isSubmitting, required this.onTap});
 
   final bool isSubmitting;
   final VoidCallback onTap;
@@ -968,9 +965,10 @@ class _SubmitButtonState extends State<_SubmitButton>
       duration: const Duration(milliseconds: 100),
       vsync: this,
     );
-    _scale = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(parent: _pressCtrl, curve: Curves.easeInOut),
-    );
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -1006,8 +1004,9 @@ class _SubmitButtonState extends State<_SubmitButton>
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFFA8D4B8)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFFA8D4B8),
+                    ),
                   ),
                 )
               else
@@ -1047,15 +1046,11 @@ class _ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: _redSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _redAccent.withOpacity(0.3),
-          width: 0.5,
-        ),
+        border: Border.all(color: _redAccent.withOpacity(0.3), width: 0.5),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded,
-              color: _redAccent, size: 18),
+          const Icon(Icons.error_outline_rounded, color: _redAccent, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

@@ -67,13 +67,15 @@ const _$CaseSeverityEnumMap = {
 };
 
 CaseImage _$CaseImageFromJson(Map<String, dynamic> json) => CaseImage(
-  id: json['id'] as String,
+  id: json['id'] as String?,
   caseId: json['caseId'] as String,
   imageUrl: json['imageUrl'] as String,
   fileName: json['fileName'] as String,
   mimeType: json['mimeType'] as String,
   fileSize: (json['fileSize'] as num).toInt(),
-  createdAt: DateTime.parse(json['createdAt'] as String),
+  createdAt: json['createdAt'] == null
+      ? null
+      : DateTime.parse(json['createdAt'] as String),
 );
 
 Map<String, dynamic> _$CaseImageToJson(CaseImage instance) => <String, dynamic>{
@@ -83,7 +85,7 @@ Map<String, dynamic> _$CaseImageToJson(CaseImage instance) => <String, dynamic>{
   'fileName': instance.fileName,
   'mimeType': instance.mimeType,
   'fileSize': instance.fileSize,
-  'createdAt': instance.createdAt.toIso8601String(),
+  'createdAt': instance.createdAt?.toIso8601String(),
 };
 
 Case _$CaseFromJson(Map<String, dynamic> json) => Case(
