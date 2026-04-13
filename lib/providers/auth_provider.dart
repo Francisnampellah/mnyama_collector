@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
 import '../models/auth_models.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -72,30 +73,56 @@ class AuthProvider with ChangeNotifier {
     required String confirmPassword,
   }) async {
     try {
+      developer.log(
+        '📝 REGISTER: Starting registration for email: $email',
+        name: 'AuthProvider',
+      );
+
       // Validation
       if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
         _error = 'All fields are required';
+        developer.log(
+          '❌ REGISTER: Validation failed - empty fields',
+          name: 'AuthProvider',
+        );
         notifyListeners();
         return false;
       }
 
       if (password != confirmPassword) {
         _error = 'Passwords do not match';
+        developer.log(
+          '❌ REGISTER: Validation failed - passwords do not match',
+          name: 'AuthProvider',
+        );
         notifyListeners();
         return false;
       }
 
       if (password.length < 6) {
         _error = 'Password must be at least 6 characters';
+        developer.log(
+          '❌ REGISTER: Validation failed - password too short',
+          name: 'AuthProvider',
+        );
         notifyListeners();
         return false;
       }
 
       if (!_isValidEmail(email)) {
         _error = 'Please enter a valid email address';
+        developer.log(
+          '❌ REGISTER: Validation failed - invalid email format',
+          name: 'AuthProvider',
+        );
         notifyListeners();
         return false;
       }
+
+      developer.log(
+        '✓ REGISTER: Validation passed, calling AuthService',
+        name: 'AuthProvider',
+      );
 
       _isLoading = true;
       _error = null;
@@ -115,7 +142,10 @@ class AuthProvider with ChangeNotifier {
 
       // Save user data for persistence
       await UserService.saveUser(response.user);
-      print('[AuthProvider] User registered and saved: ${response.user.email}');
+      developer.log(
+        '✅ REGISTER: User registered and saved: ${response.user.email}',
+        name: 'AuthProvider',
+      );
 
       notifyListeners();
 
@@ -123,11 +153,17 @@ class AuthProvider with ChangeNotifier {
     } on ApiException catch (e) {
       _error = e.message;
       _isLoading = false;
+      developer.log(
+        '🔴 REGISTER API ERROR: ${e.message} (Status: ${e.statusCode})',
+        name: 'AuthProvider',
+      );
       notifyListeners();
       return false;
     } catch (e) {
       _error = 'An unexpected error occurred';
       _isLoading = false;
+      developer.log('🔴 REGISTER ERROR: $e', name: 'AuthProvider');
+      developer.log('Stack trace: ${StackTrace.current}', name: 'AuthProvider');
       notifyListeners();
       return false;
     }
@@ -136,18 +172,36 @@ class AuthProvider with ChangeNotifier {
   // Login user
   Future<bool> login({required String email, required String password}) async {
     try {
+      developer.log(
+        '🔐 LOGIN: Starting login for email: $email',
+        name: 'AuthProvider',
+      );
+
       // Validation
       if (email.isEmpty || password.isEmpty) {
         _error = 'Email and password are required';
+        developer.log(
+          '❌ LOGIN: Validation failed - empty fields',
+          name: 'AuthProvider',
+        );
         notifyListeners();
         return false;
       }
 
       if (!_isValidEmail(email)) {
         _error = 'Please enter a valid email address';
+        developer.log(
+          '❌ LOGIN: Validation failed - invalid email format',
+          name: 'AuthProvider',
+        );
         notifyListeners();
         return false;
       }
+
+      developer.log(
+        '✓ LOGIN: Validation passed, calling AuthService',
+        name: 'AuthProvider',
+      );
 
       _isLoading = true;
       _error = null;
@@ -166,7 +220,10 @@ class AuthProvider with ChangeNotifier {
 
       // Save user data for persistence
       await UserService.saveUser(response.user);
-      print('[AuthProvider] User logged in and saved: ${response.user.email}');
+      developer.log(
+        '✅ LOGIN: User logged in and saved: ${response.user.email}',
+        name: 'AuthProvider',
+      );
 
       notifyListeners();
 
@@ -174,11 +231,17 @@ class AuthProvider with ChangeNotifier {
     } on ApiException catch (e) {
       _error = e.message;
       _isLoading = false;
+      developer.log(
+        '🔴 LOGIN API ERROR: ${e.message} (Status: ${e.statusCode})',
+        name: 'AuthProvider',
+      );
       notifyListeners();
       return false;
     } catch (e) {
       _error = 'An unexpected error occurred';
       _isLoading = false;
+      developer.log('🔴 LOGIN ERROR: $e', name: 'AuthProvider');
+      developer.log('Stack trace: ${StackTrace.current}', name: 'AuthProvider');
       notifyListeners();
       return false;
     }

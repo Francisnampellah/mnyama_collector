@@ -3,7 +3,8 @@
 
 class AppConfig {
   // Backend API Configuration
-  static const String backendBaseUrl = 'http://192.168.1.122:4000/api';
+  static const String backendBaseUrl =
+      'https://unisexual-relight-absolute.ngrok-free.dev/api';
 
   // For Android Emulator use: 'http://10.0.2.2:4000/api'
   // For Real Device use: 'http://YOUR_BACKEND_IP:4000/api'
