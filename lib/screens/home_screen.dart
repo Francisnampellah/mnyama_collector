@@ -266,7 +266,7 @@ class _Header extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'NeTy',
+                          'Mnyama collect',
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w600,

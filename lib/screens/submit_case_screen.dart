@@ -137,7 +137,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: _NeTyTextField(
+                                      child: _MnyamaCollectTextField(
                                         label: 'Breed',
                                         hint: 'e.g. Holstein',
                                         onChanged: (v) => _breed = v,
@@ -145,7 +145,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
-                                      child: _NeTyTextField(
+                                      child: _MnyamaCollectTextField(
                                         label: 'Age (months)',
                                         hint: 'e.g. 24',
                                         keyboardType: TextInputType.number,
@@ -177,7 +177,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                             iconBg: _redSurface,
                             child: Column(
                               children: [
-                                _NeTyTextField(
+                                _MnyamaCollectTextField(
                                   label: 'Symptoms',
                                   hint: 'Describe the observed symptoms…',
                                   maxLines: 3,
@@ -185,7 +185,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                                   onChanged: (v) => _symptoms = v,
                                 ),
                                 const SizedBox(height: 12),
-                                _NeTyTextField(
+                                _MnyamaCollectTextField(
                                   label: 'Diagnosis',
                                   hint: 'Any known diagnosis? (optional)',
                                   maxLines: 3,
@@ -205,13 +205,13 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
                             iconBg: _blueSurface,
                             child: Column(
                               children: [
-                                _NeTyTextField(
+                                _MnyamaCollectTextField(
                                   label: 'Farm location',
                                   hint: 'Geographic area or farm name',
                                   onChanged: (v) => _farmLocation = v,
                                 ),
                                 const SizedBox(height: 12),
-                                _NeTyTextField(
+                                _MnyamaCollectTextField(
                                   label: 'Additional notes',
                                   hint: 'Any other relevant information…',
                                   maxLines: 3,
@@ -375,7 +375,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
         showSearchBox: true,
         fit: FlexFit.loose,
         searchFieldProps: TextFieldProps(
-          decoration: _netyInputDecoration(label: 'Search disease…'),
+          decoration: _mnyamaCollectInputDecoration(label: 'Search disease…'),
         ),
         itemBuilder: (context, disease, _) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -404,7 +404,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
       onChanged: (disease) => setState(() => _selectedDisease = disease),
       compareFn: (a, b) => a.id == b.id,
       dropdownDecoratorProps: DropDownDecoratorProps(
-        dropdownSearchDecoration: _netyInputDecoration(
+        dropdownSearchDecoration: _mnyamaCollectInputDecoration(
           label: 'Disease type',
           hint: 'Search and select…',
           prefixIcon: Icons.health_and_safety_outlined,
@@ -420,7 +420,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
       selectedItem: _animalType,
       onChanged: (v) => setState(() => _animalType = v),
       dropdownDecoratorProps: DropDownDecoratorProps(
-        dropdownSearchDecoration: _netyInputDecoration(
+        dropdownSearchDecoration: _mnyamaCollectInputDecoration(
           label: 'Animal type',
           hint: 'Select animal type…',
           prefixIcon: Icons.pets_outlined,
@@ -436,7 +436,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
       selectedItem: _gender,
       onChanged: (v) => setState(() => _gender = v),
       dropdownDecoratorProps: DropDownDecoratorProps(
-        dropdownSearchDecoration: _netyInputDecoration(
+        dropdownSearchDecoration: _mnyamaCollectInputDecoration(
           label: 'Gender',
           prefixIcon: Icons.wc_outlined,
         ),
@@ -452,7 +452,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
       selectedItem: _severity,
       onChanged: (v) => setState(() => _severity = v),
       dropdownDecoratorProps: DropDownDecoratorProps(
-        dropdownSearchDecoration: _netyInputDecoration(
+        dropdownSearchDecoration: _mnyamaCollectInputDecoration(
           label: 'Severity',
           prefixIcon: Icons.warning_amber_outlined,
         ),
@@ -464,7 +464,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen>
 
   // ── Shared input decoration ──────────────────────────────────────────────────
 
-  InputDecoration _netyInputDecoration({
+  InputDecoration _mnyamaCollectInputDecoration({
     required String label,
     String? hint,
     IconData? prefixIcon,
@@ -815,8 +815,8 @@ class _StepSection extends StatelessWidget {
 
 // ─── Text field ───────────────────────────────────────────────────────────────
 
-class _NeTyTextField extends StatelessWidget {
-  const _NeTyTextField({
+class _MnyamaCollectTextField extends StatelessWidget {
+  const _MnyamaCollectTextField({
     required this.label,
     this.hint,
     this.keyboardType = TextInputType.text,

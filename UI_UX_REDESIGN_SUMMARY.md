@@ -1,7 +1,7 @@
-# ✨ NeTy - UI/UX Design Redesign Summary
+# ✨ Mnyama collect - UI/UX Design Redesign Summary
 
 ## Overview
-I've completely redesigned all screens of your mnyama_collector (NeTy) app with modern UI/UX best practices, improved visual hierarchy, smoother animations, and better user experience.
+I've completely redesigned all screens of your mnyama_collector (Mnyama collect) app with modern UI/UX best practices, improved visual hierarchy, smoother animations, and better user experience.
 
 ---
 
@@ -328,7 +328,7 @@ Secondary: #8B5CF6 (Purple)
 
 ## 🎉 Result
 
-Your NeTy app now has a **professional, modern, and polished UI** that will impress users and provide an excellent user experience. The redesign significantly improves:
+Your Mnyama collect app now has a **professional, modern, and polished UI** that will impress users and provide an excellent user experience. The redesign significantly improves:
 
 - Visual appeal
 - User engagement

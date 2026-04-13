@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-This guide explains the authentication system implemented for the NeTy Flutter app, which integrates with the backend API described in `backend.md`.
+This guide explains the authentication system implemented for the Mnyama collect Flutter app, which integrates with the backend API described in `backend.md`.
 
 ---
 

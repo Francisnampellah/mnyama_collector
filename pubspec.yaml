@@ -58,6 +58,9 @@ dependencies:
   
   # Image Picker for Camera & Gallery
   image_picker: ^1.1.0
+  
+  # Google Fonts
+  google_fonts: ^6.0.0
 
 dev_dependencies:
   flutter_test:

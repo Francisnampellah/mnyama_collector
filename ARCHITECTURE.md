@@ -338,7 +338,7 @@ Production Environment
 │  Flutter Release App (📦)            │
 │  - Release build                     │
 │  - Network security strict           │
-│  └─→ Backend https://api.nety.com    │
+│  └─→ Backend https://api.mnyama.com  │
 └──────────────────────────────────────┘
 ```
 

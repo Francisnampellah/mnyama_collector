@@ -29,7 +29,7 @@ class AppConfig {
   static const int requestTimeoutSeconds = 10;
 
   // App Configuration
-  static const String appName = 'NeTy - Animal Disease AI';
+  static const String appName = 'Mnyama collect - Animal Disease AI';
   static const String appVersion = '1.0.0';
 
   // Validation Rules

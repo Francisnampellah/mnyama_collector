@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CaseProvider()),
       ],
       child: MaterialApp(
-        title: 'NeTy - Animal Disease AI',
+        title: 'Mnyama collect - Animal Disease AI',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,

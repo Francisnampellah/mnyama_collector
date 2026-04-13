@@ -24,7 +24,7 @@ class ImageLoadingService {
       final response = await _httpClient
           .head(
             Uri.parse(url),
-            headers: {'User-Agent': 'NeTy-Animal-Disease-App/1.0'},
+            headers: {'User-Agent': 'Mnyama-collect-Animal-Disease-App/1.0'},
           )
           .timeout(
             const Duration(seconds: 10),
@@ -53,7 +53,7 @@ class ImageLoadingService {
       final response = await _httpClient
           .head(
             Uri.parse(url),
-            headers: {'User-Agent': 'NeTy-Animal-Disease-App/1.0'},
+            headers: {'User-Agent': 'Mnyama-collect-Animal-Disease-App/1.0'},
           )
           .timeout(
             const Duration(seconds: 10),

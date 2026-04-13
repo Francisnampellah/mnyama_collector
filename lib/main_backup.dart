@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
       child: MaterialApp(
-        title: 'NeTy - Animal Disease AI',
+        title: 'Mnyama collect - Animal Disease AI',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,

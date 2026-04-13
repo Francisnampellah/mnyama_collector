@@ -45,7 +45,7 @@ Use this checklist to verify all components are properly implemented and working
 **Check**: Open `lib/config/app_config.dart` and verify URL
 
 ### App Configuration  
-- [ ] App name is set to "NeTy - Animal Disease AI"
+- [ ] App name is set to "Mnyama collect - Animal Disease AI"
 - [ ] Theme color is set to Purple
 - [ ] All strings are properly configured
 

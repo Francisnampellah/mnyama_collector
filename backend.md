@@ -1,8 +1,8 @@
-# NeTy - Animal Disease AI Backend Documentation
+# Mnyama collect - Animal Disease AI Backend Documentation
 
 ## 📋 Project Overview
 
-**NeTy** is a production-ready Node.js backend API designed for **AI-powered animal disease training data collection and management**. It provides a robust system for collecting, storing, and managing veterinary disease cases with image uploads, user authentication, and role-based access control.
+**Mnyama collect** is a production-ready Node.js backend API designed for **AI-powered animal disease training data collection and management**. It provides a robust system for collecting, storing, and managing veterinary disease cases with image uploads, user authentication, and role-based access control.
 
 **Current Status**: Core features implemented | Firebase integration pending
 
@@ -50,7 +50,7 @@ The system enables:
 ## 📁 Project Structure
 
 ```
-NeTy/
+Mnyama-collect/
 ├── src/                        # Source code
 │   ├── app.ts                 # Express app configuration
 │   ├── server.ts              # Server entry point
