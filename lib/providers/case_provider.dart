@@ -137,8 +137,7 @@ class CaseProvider extends ChangeNotifier {
       }
 
       print('[CaseProvider] Calling CaseService.uploadCaseImages()...');
-      final uploadedImages =
-          await CaseService.uploadCaseImages(caseId, images);
+      final uploadedImages = await CaseService.uploadCaseImages(caseId, images);
 
       print('[CaseProvider] ✓ All images uploaded successfully');
       print('[CaseProvider] Uploaded ${uploadedImages.length} images:');

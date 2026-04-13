@@ -677,9 +677,7 @@ class CaseService {
             imageList = data['data'] as List<dynamic>;
             print('[CaseService] Using "data" key format');
           } else {
-            print(
-              '[CaseService] WARNING: No recognized list key in response',
-            );
+            print('[CaseService] WARNING: No recognized list key in response');
           }
         }
 
@@ -708,12 +706,16 @@ class CaseService {
           }
         }
 
-        print('[CaseService] ✓ All ${result.length} images parsed successfully');
+        print(
+          '[CaseService] ✓ All ${result.length} images parsed successfully',
+        );
         print('[CaseService] ========== END UPLOAD CASE IMAGES ==========');
         return result;
       } else {
         final errorBody = response.body;
-        print('[CaseService] ✗ Upload failed with status ${response.statusCode}');
+        print(
+          '[CaseService] ✗ Upload failed with status ${response.statusCode}',
+        );
         print('[CaseService] Error body: $errorBody');
 
         try {
