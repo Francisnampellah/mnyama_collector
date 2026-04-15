@@ -573,14 +573,19 @@ class _CaseCardState extends State<_CaseCard>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: Text(
-                              c.animalType,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: _textPrimary,
-                                height: 1.1,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  c.animalType,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: _textPrimary,
+                                    height: 1.1,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Container(
@@ -605,7 +610,7 @@ class _CaseCardState extends State<_CaseCard>
                         children: [
                           _MetaChip(
                             icon: Icons.health_and_safety_outlined,
-                            label: 'Disease case',
+                            label: c.diseaseLabel?.name ?? 'Unknown disease',
                             iconColor: _forestGreen,
                           ),
                           const SizedBox(width: 10),

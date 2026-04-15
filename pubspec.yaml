@@ -76,6 +76,9 @@ dev_dependencies:
   # Code Generation
   build_runner: ^2.4.0
   json_serializable: ^6.7.0
+  
+  # App Icon Generation
+  flutter_launcher_icons: ^0.13.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

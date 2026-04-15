@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../models/case_models.dart';
 import '../providers/case_provider.dart';
+import '../services/case_service.dart';
+import '../config/app_config.dart';
+import '../widgets/case_image_widget.dart';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const _forestGreen = Color(0xFF1A3D2B);
@@ -38,6 +43,9 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
   late PageController _imagePageController;
   int _currentImageIndex = 0;
   late AnimationController _fadeController;
+  bool _isEditMode = false;
+  List<File> _selectedImages = [];
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -126,6 +134,9 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
                     statusColor: _forestGreen,
                     statusSurface: _forestGreenSurface,
                     onBack: () => Navigator.of(context).pop(),
+                    isEditMode: _isEditMode,
+                    onToggleEdit: () =>
+                        setState(() => _isEditMode = !_isEditMode),
                   ),
                   const Expanded(
                     child: Center(
@@ -149,6 +160,9 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
                     statusColor: _forestGreen,
                     statusSurface: _forestGreenSurface,
                     onBack: () => Navigator.of(context).pop(),
+                    isEditMode: _isEditMode,
+                    onToggleEdit: () =>
+                        setState(() => _isEditMode = !_isEditMode),
                   ),
                   Expanded(
                     child: Center(
@@ -212,6 +226,9 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
               return const Center(child: Text('No case found'));
             }
 
+            // Log the backend response
+            _logCaseResponse(caseItem);
+
             final sColor = _statusColor(caseItem.status);
             final sSurface = _statusSurface(caseItem.status);
 
@@ -223,6 +240,9 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
                   statusColor: sColor,
                   statusSurface: sSurface,
                   onBack: () => Navigator.of(context).pop(),
+                  isEditMode: _isEditMode,
+                  onToggleEdit: () =>
+                      setState(() => _isEditMode = !_isEditMode),
                 ),
                 Expanded(
                   child: SingleChildScrollView(
@@ -258,7 +278,10 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
                         const SizedBox(height: 16),
 
                         // Images
-                        if (caseItem.images != null &&
+                        if (_isEditMode) ...[
+                          _buildImageUploadSection(),
+                          const SizedBox(height: 16),
+                        ] else if (caseItem.images != null &&
                             caseItem.images!.isNotEmpty) ...[
                           _buildImageGallery(caseItem.images!),
                           const SizedBox(height: 16),
@@ -317,13 +340,42 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
                           iconBg: _forestGreenSurface,
                           title: 'Disease information',
                           children: [
-                            _InfoRow(
-                              label: 'Disease ID',
-                              value: caseItem.diseaseLabelId,
-                              icon: Icons.health_and_safety_outlined,
-                              iconColor: _forestGreen,
-                              iconBg: _forestGreenSurface,
-                            ),
+                            if (caseItem.diseaseLabel != null)
+                              Column(
+                                children: [
+                                  _InfoRow(
+                                    label: 'Name',
+                                    value: caseItem.diseaseLabel!.name,
+                                    icon: Icons.health_and_safety_outlined,
+                                    iconColor: _forestGreen,
+                                    iconBg: _forestGreenSurface,
+                                  ),
+                                  _Divider(),
+                                  _InfoRow(
+                                    label: 'Code',
+                                    value: caseItem.diseaseLabel!.code,
+                                    icon: Icons.api_outlined,
+                                    iconColor: _forestGreen,
+                                    iconBg: _forestGreenSurface,
+                                  ),
+                                  _Divider(),
+                                  _InfoRow(
+                                    label: 'Animal Type',
+                                    value: caseItem.diseaseLabel!.animalType,
+                                    icon: Icons.pets_outlined,
+                                    iconColor: _forestGreen,
+                                    iconBg: _forestGreenSurface,
+                                  ),
+                                ],
+                              )
+                            else
+                              _InfoRow(
+                                label: 'Disease',
+                                value: 'N/A',
+                                icon: Icons.health_and_safety_outlined,
+                                iconColor: _forestGreen,
+                                iconBg: _forestGreenSurface,
+                              ),
                           ],
                         ),
                         const SizedBox(height: 14),
@@ -413,9 +465,263 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
     );
   }
 
+  // ── Image upload section (edit mode) ──────────────────────────────────────────
+
+  Widget _buildImageUploadSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderColor, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Upload header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: _amberSurface,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.image_outlined,
+                        size: 17,
+                        color: _amberAccent,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Upload or update images',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: _textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_selectedImages.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _amberSurface,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${_selectedImages.length} selected',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _amberAccent,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Main upload area
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                // Primary upload button (only show if no images selected)
+                if (_selectedImages.isEmpty) ...[
+                  GestureDetector(
+                    onTap: _pickImageFromGallery,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 24,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _amberSurface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _amberAccent,
+                          width: 1.5,
+                          style: BorderStyle.solid,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 28,
+                              color: _amberAccent,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Add or replace images',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: _textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Tap to browse gallery or take photo',
+                            style: TextStyle(fontSize: 12, color: _textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ] else ...[
+                  // Display selected images grid
+                  SizedBox(
+                    height: 80,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _selectedImages.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          width: 80,
+                          height: 80,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: _borderColor, width: 0.5),
+                          ),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: Image.file(
+                                  _selectedImages[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: _warmBg,
+                                    child: const Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 20,
+                                      color: _labelColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedImages.removeAt(index);
+                                    });
+                                  },
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: _redAccent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Quick action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionButton(
+                        icon: Icons.photo_library_outlined,
+                        label: 'Gallery',
+                        onTap: _pickImageFromGallery,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _QuickActionButton(
+                        icon: Icons.camera_alt_outlined,
+                        label: 'Camera',
+                        onTap: _pickImageFromCamera,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Save/Upload button (only show if images selected)
+                if (_selectedImages.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _saveImagesToCase,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _forestGreen,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Upload Images',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+      ),
+    );
+  }
+
   // ── Image gallery ─────────────────────────────────────────────────────────────
 
-  Widget _buildImageGallery(List<CaseImage> images) {
+  Widget _buildImageGallery(List<CaseImage>? images) {
+    // Safety check
+    if (images == null || images.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: _cardBg,
@@ -489,48 +795,45 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
               itemCount: images.length,
               itemBuilder: (context, index) {
                 final img = images[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Image.network(
-                      img.imageUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (ctx, child, prog) {
-                        if (prog == null) return child;
-                        return Container(
-                          color: _warmBg,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: prog.expectedTotalBytes != null
-                                  ? prog.cumulativeBytesLoaded /
-                                        prog.expectedTotalBytes!
-                                  : null,
-                              color: _forestGreen,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Container(
+                final imagePath = _getImagePath(img);
+
+                // Skip if no valid image path
+                if (imagePath.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
                         color: _warmBg,
-                        child: const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.image_not_supported_outlined,
-                              size: 40,
-                              color: _labelColor,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Failed to load',
-                              style: TextStyle(fontSize: 12, color: _textMuted),
-                            ),
-                          ],
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: _textMuted,
                         ),
                       ),
                     ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: CaseImageWidget(
+                    imagePath: imagePath,
+                    width: double.infinity,
+                    height: 260,
+                    fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(14),
+                    onError: (error, stackTrace) {
+                      print(
+                        '[ViewCaseDetailScreen] Failed to load image $imagePath: $error',
+                      );
+                    },
+                    onSuccess: () {
+                      print(
+                        '[ViewCaseDetailScreen] Successfully loaded image $imagePath',
+                      );
+                    },
                   ),
                 );
               },
@@ -578,6 +881,32 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
                 itemCount: images.length,
                 itemBuilder: (context, index) {
                   final selected = index == _currentImageIndex;
+                  final imagePath = _getImagePath(images[index]);
+
+                  // Skip if no valid image path
+                  if (imagePath.isEmpty) {
+                    return Container(
+                      width: 60,
+                      height: 60,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selected ? _forestGreen : _borderColor,
+                          width: selected ? 2 : 0.5,
+                        ),
+                        color: _warmBg,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 16,
+                          color: _textMuted,
+                        ),
+                      ),
+                    );
+                  }
+
                   return GestureDetector(
                     onTap: () => _imagePageController.animateToPage(
                       index,
@@ -595,20 +924,10 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
                           width: selected ? 2 : 0.5,
                         ),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(9),
-                        child: Image.network(
-                          images[index].imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: _warmBg,
-                            child: const Icon(
-                              Icons.broken_image_outlined,
-                              size: 20,
-                              color: _labelColor,
-                            ),
-                          ),
-                        ),
+                      child: SimpleNetworkImage(
+                        imagePath: imagePath,
+                        width: 60,
+                        height: 60,
                       ),
                     ),
                   );
@@ -625,6 +944,411 @@ class _ViewCaseDetailScreenState extends State<ViewCaseDetailScreen>
     final m = dt.minute.toString().padLeft(2, '0');
     return '${dt.day}/${dt.month}/${dt.year} at $h:$m';
   }
+
+  /// Get localPath from image for serving via ngrok/backend
+  /// Fallback: uses fileName to reconstruct path as 'uploads/cases/{fileName}'
+  /// Returns empty string if no valid path available
+  String _getImagePath(CaseImage? image) {
+    if (image == null) {
+      print('[ViewCaseDetailScreen] ✗ CaseImage is null');
+      return '';
+    }
+
+    print('[ViewCaseDetailScreen] ========== IMAGE DEBUG ==========');
+    print('[ViewCaseDetailScreen] id: ${image.id}');
+    print('[ViewCaseDetailScreen] fileName: ${image.fileName}');
+    print('[ViewCaseDetailScreen] localPath: ${image.localPath}');
+    print(
+      '[ViewCaseDetailScreen] localPath is null: ${image.localPath == null}',
+    );
+    print(
+      '[ViewCaseDetailScreen] localPath isEmpty: ${image.localPath?.isEmpty ?? "null"}',
+    );
+    print('[ViewCaseDetailScreen] ===============================');
+
+    // Try to use localPath if available
+    if (image.localPath != null && image.localPath!.isNotEmpty) {
+      print('[ViewCaseDetailScreen] ✓ Using localPath: ${image.localPath}');
+      return image.localPath!;
+    }
+
+    // Fallback: construct from fileName
+    if (image.fileName.isNotEmpty) {
+      final fallbackPath = 'uploads/cases/${image.fileName}';
+      print(
+        '[ViewCaseDetailScreen] ⚠ localPath empty, using fallback: $fallbackPath',
+      );
+      return fallbackPath;
+    }
+
+    print('[ViewCaseDetailScreen] ✗ No localPath or fileName available');
+    return '';
+  }
+
+  /// Log complete case response from backend
+  void _logCaseResponse(Case caseItem) {
+    print('\n');
+    print('╔════════════════════════════════════════════════════════════════╗');
+    print('║          BACKEND RESPONSE - CASE DETAIL                       ║');
+    print('╚════════════════════════════════════════════════════════════════╝');
+
+    // Case metadata
+    print('[ViewCaseDetailScreen] Case ID: ${caseItem.id}');
+    print('[ViewCaseDetailScreen] User ID: ${caseItem.userId}');
+    print(
+      '[ViewCaseDetailScreen] Disease Label ID: ${caseItem.diseaseLabelId}',
+    );
+    print('[ViewCaseDetailScreen]');
+
+    // Animal details
+    print('[ViewCaseDetailScreen] ── ANIMAL DETAILS ──');
+    print('[ViewCaseDetailScreen] Animal Type: ${caseItem.animalType}');
+    print('[ViewCaseDetailScreen] Breed: ${caseItem.breed ?? "N/A"}');
+    print('[ViewCaseDetailScreen] Gender: ${caseItem.gender}');
+    print(
+      '[ViewCaseDetailScreen] Age (months): ${caseItem.ageMonths ?? "N/A"}',
+    );
+    print('[ViewCaseDetailScreen]');
+
+    // Clinical details
+    print('[ViewCaseDetailScreen] ── CLINICAL DETAILS ──');
+    print('[ViewCaseDetailScreen] Symptoms: ${caseItem.symptoms}');
+    print('[ViewCaseDetailScreen] Diagnosis: ${caseItem.diagnosis ?? "N/A"}');
+    print('[ViewCaseDetailScreen] Severity: ${caseItem.severity}');
+    print('[ViewCaseDetailScreen]');
+
+    // Case status
+    print('[ViewCaseDetailScreen] ── CASE STATUS ──');
+    print('[ViewCaseDetailScreen] Status: ${caseItem.status}');
+    print('[ViewCaseDetailScreen] Created: ${caseItem.createdAt}');
+    print('[ViewCaseDetailScreen] Updated: ${caseItem.updatedAt}');
+    print('[ViewCaseDetailScreen]');
+
+    // Farm location & notes
+    print('[ViewCaseDetailScreen] ── ADDITIONAL INFO ──');
+    print(
+      '[ViewCaseDetailScreen] Farm Location: ${caseItem.farmLocation ?? "N/A"}',
+    );
+    print('[ViewCaseDetailScreen] Notes: ${caseItem.notes ?? "N/A"}');
+    print('[ViewCaseDetailScreen]');
+
+    // User details
+    if (caseItem.user != null) {
+      print('[ViewCaseDetailScreen] ── USER INFO ──');
+      print('[ViewCaseDetailScreen] Name: ${caseItem.user!.fullName}');
+      print('[ViewCaseDetailScreen] Email: ${caseItem.user!.email}');
+      print('[ViewCaseDetailScreen] Role: ${caseItem.user!.role}');
+      print('[ViewCaseDetailScreen]');
+    }
+
+    // Disease label details
+    if (caseItem.diseaseLabel != null) {
+      print('[ViewCaseDetailScreen] ── DISEASE LABEL ──');
+      print('[ViewCaseDetailScreen] Code: ${caseItem.diseaseLabel!.code}');
+      print('[ViewCaseDetailScreen] Name: ${caseItem.diseaseLabel!.name}');
+      print(
+        '[ViewCaseDetailScreen] Animal Type: ${caseItem.diseaseLabel!.animalType}',
+      );
+      print('[ViewCaseDetailScreen]');
+    }
+
+    // Images details
+    print('[ViewCaseDetailScreen] ── IMAGES ──');
+    if (caseItem.images != null && caseItem.images!.isNotEmpty) {
+      print('[ViewCaseDetailScreen] Total Images: ${caseItem.images!.length}');
+      for (int i = 0; i < caseItem.images!.length; i++) {
+        final image = caseItem.images![i];
+        print('[ViewCaseDetailScreen]');
+        print('[ViewCaseDetailScreen] Image ${i + 1}:');
+        print('[ViewCaseDetailScreen]   ID: ${image.id}');
+        print('[ViewCaseDetailScreen]   File Name: ${image.fileName}');
+        print(
+          '[ViewCaseDetailScreen]   Local Path: ${image.localPath ?? "null"}',
+        );
+        print('[ViewCaseDetailScreen]   MIME Type: ${image.mimeType}');
+        print(
+          '[ViewCaseDetailScreen]   File Size: ${image.fileSize} bytes (${(image.fileSize / 1024 / 1024).toStringAsFixed(2)} MB)',
+        );
+        print('[ViewCaseDetailScreen]   Created: ${image.createdAt}');
+        print('[ViewCaseDetailScreen]   Image URL: ${image.imageUrl}');
+      }
+    } else {
+      print('[ViewCaseDetailScreen] No images available');
+    }
+
+    print('[ViewCaseDetailScreen]');
+    print('╔════════════════════════════════════════════════════════════════╗');
+    print('║                    END OF RESPONSE LOG                         ║');
+    print('╚════════════════════════════════════════════════════════════════╝');
+    print('\n');
+  }
+
+  // ── Image picker methods ───────────────────────────────────────────────────
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      print(
+        '[ViewCaseDetailScreen] ========== GALLERY PICKER START ==========',
+      );
+      print('[ViewCaseDetailScreen] Case ID: ${widget.caseId}');
+      print(
+        '[ViewCaseDetailScreen] Current selected images: ${_selectedImages.length}',
+      );
+
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        print('[ViewCaseDetailScreen] ✓ Image picked from gallery');
+        print('[ViewCaseDetailScreen]   Path: ${pickedFile.path}');
+        print('[ViewCaseDetailScreen]   Name: ${pickedFile.name}');
+
+        final file = File(pickedFile.path);
+        final exists = await file.exists();
+        print('[ViewCaseDetailScreen]   File exists: $exists');
+
+        if (exists) {
+          final fileSize = await file.length();
+          print(
+            '[ViewCaseDetailScreen]   File size: $fileSize bytes (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)',
+          );
+        }
+
+        setState(() {
+          _selectedImages.add(file);
+          print('[ViewCaseDetailScreen] ✓ Image added to list');
+          print(
+            '[ViewCaseDetailScreen]   Total selected: ${_selectedImages.length}',
+          );
+        });
+      } else {
+        print('[ViewCaseDetailScreen] ℹ User cancelled gallery picker');
+      }
+
+      print('[ViewCaseDetailScreen] ========== GALLERY PICKER END ==========');
+    } catch (e, stackTrace) {
+      print('[ViewCaseDetailScreen] ✗ Gallery picker error: $e');
+      print('[ViewCaseDetailScreen] Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: _redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    try {
+      print('[ViewCaseDetailScreen] ========== CAMERA PICKER START ==========');
+      print('[ViewCaseDetailScreen] Case ID: ${widget.caseId}');
+      print(
+        '[ViewCaseDetailScreen] Current selected images: ${_selectedImages.length}',
+      );
+
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        print('[ViewCaseDetailScreen] ✓ Photo captured from camera');
+        print('[ViewCaseDetailScreen]   Path: ${pickedFile.path}');
+        print('[ViewCaseDetailScreen]   Name: ${pickedFile.name}');
+
+        final file = File(pickedFile.path);
+        final exists = await file.exists();
+        print('[ViewCaseDetailScreen]   File exists: $exists');
+
+        if (exists) {
+          final fileSize = await file.length();
+          print(
+            '[ViewCaseDetailScreen]   File size: $fileSize bytes (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)',
+          );
+        }
+
+        setState(() {
+          _selectedImages.add(file);
+          print('[ViewCaseDetailScreen] ✓ Image added to list');
+          print(
+            '[ViewCaseDetailScreen]   Total selected: ${_selectedImages.length}',
+          );
+        });
+      } else {
+        print('[ViewCaseDetailScreen] ℹ User cancelled camera picker');
+      }
+
+      print('[ViewCaseDetailScreen] ========== CAMERA PICKER END ==========');
+    } catch (e, stackTrace) {
+      print('[ViewCaseDetailScreen] ✗ Camera picker error: $e');
+      print('[ViewCaseDetailScreen] Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error taking photo: $e'),
+            backgroundColor: _redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveImagesToCase() async {
+    print('[ViewCaseDetailScreen] ========== UPLOAD START ==========');
+    print('[ViewCaseDetailScreen] Case ID: ${widget.caseId}');
+    print(
+      '[ViewCaseDetailScreen] Selected images count: ${_selectedImages.length}',
+    );
+
+    if (_selectedImages.isEmpty) {
+      print('[ViewCaseDetailScreen] ✗ No images selected - aborting upload');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one image'),
+          backgroundColor: _redAccent,
+        ),
+      );
+      return;
+    }
+
+    // Log image details
+    for (int i = 0; i < _selectedImages.length; i++) {
+      final file = _selectedImages[i];
+      try {
+        final size = await file.length();
+        print('[ViewCaseDetailScreen] Image ${i + 1}:');
+        print('[ViewCaseDetailScreen]   Path: ${file.path}');
+        print(
+          '[ViewCaseDetailScreen]   Size: $size bytes (${(size / 1024 / 1024).toStringAsFixed(2)} MB)',
+        );
+        print('[ViewCaseDetailScreen]   Exists: ${await file.exists()}');
+      } catch (e) {
+        print('[ViewCaseDetailScreen] Error reading image ${i + 1}: $e');
+      }
+    }
+
+    try {
+      // Show loading indicator
+      if (!mounted) {
+        print('[ViewCaseDetailScreen] ✗ Widget not mounted - aborting');
+        return;
+      }
+
+      print('[ViewCaseDetailScreen] ℹ Showing loading snackbar');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Uploading ${_selectedImages.length} image(s)...'),
+          backgroundColor: _forestGreen,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+
+      // Call the CaseService to upload images
+      print('[ViewCaseDetailScreen] ℹ Calling CaseService.uploadCaseImages()');
+      print(
+        '[ViewCaseDetailScreen]   Backend URL: ${AppConfig.backendBaseUrl}',
+      );
+
+      final uploadedImages = await CaseService.uploadCaseImages(
+        widget.caseId,
+        _selectedImages,
+      );
+
+      print('[ViewCaseDetailScreen] ✓ Upload successful!');
+      print(
+        '[ViewCaseDetailScreen]   Uploaded images count: ${uploadedImages.length}',
+      );
+
+      if (!mounted) {
+        print(
+          '[ViewCaseDetailScreen] ⚠ Widget not mounted after upload - skipping UI updates',
+        );
+        return;
+      }
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Successfully uploaded ${uploadedImages.length} image(s)',
+          ),
+          backgroundColor: _forestGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      print('[ViewCaseDetailScreen] ℹ Clearing selected images');
+      // Clear the selected images
+      setState(() {
+        _selectedImages.clear();
+      });
+
+      // Refresh the case details to show the new images
+      print('[ViewCaseDetailScreen] ℹ Refreshing case details');
+      await context.read<CaseProvider>().getCaseById(widget.caseId);
+      print('[ViewCaseDetailScreen] ✓ Case details refreshed');
+
+      // Exit edit mode
+      print('[ViewCaseDetailScreen] ℹ Exiting edit mode');
+      setState(() {
+        _isEditMode = false;
+      });
+
+      print('[ViewCaseDetailScreen] ✓ Edit mode exited');
+      print('[ViewCaseDetailScreen] ========== UPLOAD SUCCESS ==========');
+    } catch (e, stackTrace) {
+      print('[ViewCaseDetailScreen] ✗ Upload failed with exception!');
+      print('[ViewCaseDetailScreen] Error type: ${e.runtimeType}');
+      print('[ViewCaseDetailScreen] Error message: $e');
+      print('[ViewCaseDetailScreen] Stack trace:\n$stackTrace');
+
+      if (!mounted) {
+        print(
+          '[ViewCaseDetailScreen] ⚠ Widget not mounted - cannot show error message',
+        );
+        return;
+      }
+
+      String errorMessage = 'Failed to upload images';
+      if (e.toString().contains('timeout')) {
+        errorMessage = 'Upload timeout. Please check your connection.';
+      } else if (e.toString().contains('No images')) {
+        errorMessage = 'No images selected';
+      } else if (e.toString().contains('token')) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (e.toString().contains('SocketException')) {
+        errorMessage = 'Network error. Check your internet connection.';
+      } else if (e.toString().contains('401')) {
+        errorMessage = 'Unauthorized. Please login again.';
+      } else if (e.toString().contains('403')) {
+        errorMessage = 'Access denied. Check permissions.';
+      } else if (e.toString().contains('404')) {
+        errorMessage = 'Case not found.';
+      } else if (e.toString().contains('413')) {
+        errorMessage = 'File too large. Max 10MB per image.';
+      } else if (e.toString().contains('500')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+
+      print('[ViewCaseDetailScreen] Error message shown: $errorMessage');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: _redAccent,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      print('[ViewCaseDetailScreen] ========== UPLOAD FAILED ==========');
+    }
+  }
 }
 
 // ─── Detail Header ────────────────────────────────────────────────────────────
@@ -636,6 +1360,8 @@ class _DetailHeader extends StatelessWidget {
     required this.statusColor,
     required this.statusSurface,
     required this.onBack,
+    required this.isEditMode,
+    required this.onToggleEdit,
   });
 
   final String? animalType;
@@ -643,6 +1369,8 @@ class _DetailHeader extends StatelessWidget {
   final Color statusColor;
   final Color statusSurface;
   final VoidCallback onBack;
+  final bool isEditMode;
+  final VoidCallback onToggleEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -657,7 +1385,7 @@ class _DetailHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back + status badge row
+                // Back + status badge & edit button row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -681,26 +1409,59 @@ class _DetailHeader extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (statusLabel != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusSurface,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          statusLabel!.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                            color: statusColor,
+                    Row(
+                      children: [
+                        if (statusLabel != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusSurface,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              statusLabel!.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1,
+                                color: statusColor,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: onToggleEdit,
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(
+                                isEditMode ? 0.25 : 0.1,
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withOpacity(
+                                  isEditMode ? 0.3 : 0.15,
+                                ),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Icon(
+                              isEditMode
+                                  ? Icons.check_rounded
+                                  : Icons.edit_rounded,
+                              size: 18,
+                              color: isEditMode
+                                  ? const Color(0xFFFFF9E1)
+                                  : const Color(0xFFB0C8B8),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -1081,6 +1842,49 @@ class _Divider extends StatelessWidget {
       height: 0.5,
       color: _borderColor,
       margin: const EdgeInsets.symmetric(vertical: 12),
+    );
+  }
+}
+
+// ─── Quick action button ──────────────────────────────────────────────────────
+
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: _amberSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _amberAccent, width: 1),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 20, color: _amberAccent),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _amberAccent,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

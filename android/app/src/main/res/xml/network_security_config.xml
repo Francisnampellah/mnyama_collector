@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext and HTTPS traffic to ngrok-free.dev domain for development -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">ngrok-free.dev</domain>
+        <trust-anchors>
+            <!-- Trust system certificates -->
+            <certificates src="system" />
+            <!-- Trust user-installed certificates -->
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

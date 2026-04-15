@@ -2,6 +2,30 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'case_models.g.dart';
 
+// User Model
+@JsonSerializable()
+class User {
+  final String id;
+  final String fullName;
+  final String email;
+  final String role;
+  final DateTime createdAt;
+
+  User({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    required this.role,
+    required this.createdAt,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  Map<String, dynamic> toJson() => _$UserToJson(this);
+
+  @override
+  String toString() => '$fullName ($email)';
+}
+
 // Disease Label Model
 @JsonSerializable()
 class DiseaseLabel {
@@ -99,18 +123,18 @@ class CreateCaseRequest {
 @JsonSerializable()
 class CaseImage {
   final String? id;
-  final String caseId;
-  final String imageUrl;
   final String fileName;
+  final String imageUrl;
+  final String? localPath;
   final String mimeType;
   final int fileSize;
   final DateTime? createdAt;
 
   CaseImage({
     this.id,
-    required this.caseId,
-    required this.imageUrl,
     required this.fileName,
+    required this.imageUrl,
+    this.localPath,
     required this.mimeType,
     required this.fileSize,
     this.createdAt,
@@ -139,6 +163,8 @@ class Case {
   final CaseStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final User? user;
+  final DiseaseLabel? diseaseLabel;
   final List<CaseImage>? images;
 
   Case({
@@ -157,6 +183,8 @@ class Case {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.user,
+    this.diseaseLabel,
     this.images,
   });
 

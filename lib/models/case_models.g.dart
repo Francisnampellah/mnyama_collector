@@ -6,6 +6,22 @@ part of 'case_models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+User _$UserFromJson(Map<String, dynamic> json) => User(
+  id: json['id'] as String,
+  fullName: json['fullName'] as String,
+  email: json['email'] as String,
+  role: json['role'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+);
+
+Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
+  'id': instance.id,
+  'fullName': instance.fullName,
+  'email': instance.email,
+  'role': instance.role,
+  'createdAt': instance.createdAt.toIso8601String(),
+};
+
 DiseaseLabel _$DiseaseLabelFromJson(Map<String, dynamic> json) => DiseaseLabel(
   id: json['id'] as String,
   code: json['code'] as String,
@@ -68,9 +84,9 @@ const _$CaseSeverityEnumMap = {
 
 CaseImage _$CaseImageFromJson(Map<String, dynamic> json) => CaseImage(
   id: json['id'] as String?,
-  caseId: json['caseId'] as String,
-  imageUrl: json['imageUrl'] as String,
   fileName: json['fileName'] as String,
+  imageUrl: json['imageUrl'] as String,
+  localPath: json['localPath'] as String?,
   mimeType: json['mimeType'] as String,
   fileSize: (json['fileSize'] as num).toInt(),
   createdAt: json['createdAt'] == null
@@ -80,9 +96,9 @@ CaseImage _$CaseImageFromJson(Map<String, dynamic> json) => CaseImage(
 
 Map<String, dynamic> _$CaseImageToJson(CaseImage instance) => <String, dynamic>{
   'id': instance.id,
-  'caseId': instance.caseId,
-  'imageUrl': instance.imageUrl,
   'fileName': instance.fileName,
+  'imageUrl': instance.imageUrl,
+  'localPath': instance.localPath,
   'mimeType': instance.mimeType,
   'fileSize': instance.fileSize,
   'createdAt': instance.createdAt?.toIso8601String(),
@@ -104,6 +120,12 @@ Case _$CaseFromJson(Map<String, dynamic> json) => Case(
   status: $enumDecode(_$CaseStatusEnumMap, json['status']),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
+  user: json['user'] == null
+      ? null
+      : User.fromJson(json['user'] as Map<String, dynamic>),
+  diseaseLabel: json['diseaseLabel'] == null
+      ? null
+      : DiseaseLabel.fromJson(json['diseaseLabel'] as Map<String, dynamic>),
   images: (json['images'] as List<dynamic>?)
       ?.map((e) => CaseImage.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -125,6 +147,8 @@ Map<String, dynamic> _$CaseToJson(Case instance) => <String, dynamic>{
   'status': _$CaseStatusEnumMap[instance.status]!,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
+  'user': instance.user,
+  'diseaseLabel': instance.diseaseLabel,
   'images': instance.images,
 };
 
