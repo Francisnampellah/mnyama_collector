@@ -16,15 +16,18 @@ class ImageConfig {
   // ─── Determine which base URL to use ──────────────────────────────────────
 
   /// Get the appropriate base URL based on environment
-  /// For debug: always uses ngrok URL (regardless of platform)
-  /// For production: uses production domain
+  /// For both debug and release: uses ngrok URL
+  /// To use production URL, change `false` to `true` below
   static String get imageBaseUrl {
-    // For debug builds (debug mode during development) - always use ngrok
-    if (_isDebugBuild) {
+    // Force ngrok URL for all builds (debug and release)
+    // Set to false to use production domain when ready
+    const bool _forceNgrok = true;
+
+    if (_forceNgrok) {
       return _devImageBaseUrl;
     }
 
-    // For release builds (production APK/app)
+    // For release builds (production APK/app) - only used if _forceNgrok is false
     return _prodImageBaseUrl;
   }
 
@@ -68,10 +71,12 @@ class ImageConfig {
   // ─── Logging & Diagnostics ────────────────────────────────────────────────
 
   static void printImageConfig() {
+    const bool _forceNgrok = true;
     print('═' * 60);
     print('[ImageConfig] Image Serving Configuration');
     print('═' * 60);
     print('Environment: ${_isDebugBuild ? "DEBUG" : "RELEASE"}');
+    print('Force Ngrok: $_forceNgrok');
     print('Image Base URL: $imageBaseUrl');
     print('Case Images Prefix: $casesImagePrefix');
     print('User Images Prefix: $usersImagePrefix');
