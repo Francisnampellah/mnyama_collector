@@ -6,12 +6,11 @@ class ImageConfig {
 
   /// Base URL for image serving (with ngrok tunnel)
   /// Images are served directly at /uploads/, not under /api
-  static const String _devImageBaseUrl =
-      'https://unisexual-relight-absolute.ngrok-free.dev';
+  static const String _devImageBaseUrl ='https://mnyamacollector.afyamnyamaserver.com';
 
   /// Production image serving base URL (without /uploads path)
   /// Replace with your actual production domain
-  static const String _prodImageBaseUrl = 'https://api.mnyama.com';
+  static const String _prodImageBaseUrl = 'https://mnyamacollector.afyamnyamaserver.com';
 
   // ─── Determine which base URL to use ──────────────────────────────────────
 
